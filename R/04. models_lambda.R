@@ -7,6 +7,9 @@ library(MASS)
 library(GGally)
 # library(plyr) - # hashed out to avoid bringing in and clashing with dplyr, used further down specifically for revalue
 
+# source the functions R script
+source("R/00. functions.R")
+
 # read in lambda files
 insect_y_lambda <- read.csv("insect_Y_data_lambda.csv", stringsAsFactors = FALSE)
 insect_n_lambda <- read.csv("insect_N_data_lambda.csv", stringsAsFactors = FALSE)
@@ -28,23 +31,6 @@ random_wiki_lpi <- random_wiki_lpi %>%
 random_wiki_lpi$lamda = c(0, diff(log10(random_wiki_lpi$LPI_final[1:53])))
 random_wiki_lpi$date <- paste("X", random_wiki_lpi$date, sep = "")
 
-# adjust the lambdas for each of the subsets with random values
-adjust_lambda <- function(x){
-  data <- melt(x, id = c("X", "SpeciesSSet", "Freq"))
-  data <- inner_join(data, random_wiki_lpi, by = c("variable" = "date"))
-  data$adjusted_lambda <- data$value - data$lamda
-  data <- data %>%
-    dplyr::select(X, SpeciesSSet, Freq, variable, adjusted_lambda)
-  
-  data <- dcast(data, X + SpeciesSSet + Freq ~ variable)
-  return(data)
-}
-
-#blah <- adjust_lambda(mammal_n_lambda)
-
-# read in pollination similarity
-pollination_sim <- readRDS("pollination_sim_0.995_stem_lower.rds")
-
 # read in pollinator data and count orders have pollinators and subset out those without pollinators
 # built in iucn_polliantor trends
 iucn_pollinators <- readRDS("iucn_pollinators_comp.rds")
@@ -61,14 +47,6 @@ pollination_characters <- pollination_text %>%
   group_by(doc_id) %>%
   summarise(no_characters = nchar(text))
 
-# function to unique the articles with taxonid 
-select_col <- function(data) {
-  fin <- data %>%
-    dplyr::select(article, taxonid) %>%
-    unique()
-  return(fin)
-}
-
 # combine taxa groupings as list
 pollinating_taxa <- list(bird_iucn_id, insect_iucn_id, mammal_iucn_id)
 
@@ -77,46 +55,11 @@ all_taxa_ids <- lapply(pollinating_taxa, select_col) %>%
   rbindlist() %>%
   mutate(article = gsub(" ", "_", article))
 
-# calculate the total views per month 
-calc_total_views <- function(data){
-  fin <- data %>%
-    group_by(taxonid) %>%
-    summarise(all_total = sum(total_views))
-}
-  
-# calculate total views across each article
-#total_views <- lapply(pollinating_taxa, calc_total_views) %>%
- # rbindlist()
 
 # redlist for iucn red list level
 redlist <- read.csv("wikipedia_data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
   mutate(species = gsub(" ", "_", species)) %>%
   dplyr::select(species, category, scientific_name, taxonid)
-
-# remove space from each of iucn_polliantors and bind to sim
-pollinators_bound <- function(data){
-  pollinators <- data %>%
-    rbindlist() %>%
-    mutate(article  = gsub(" ", "_", article))
-  
-joined_pollinators <- inner_join(pollination_sim, pollinators, by = c("Var1" = "article")) %>%
-  dplyr::select(Var1, value, pollinating) %>%
-  group_by(Var1) %>%
-  unique() %>%
-  ungroup()
-  
-  return(joined_pollinators)
-}
-
-bound_poll <- pollinators_bound(iucn_pollinators)
-  
-# models for text-mined pollinator data - first rescale pollination relatedness
-bound_poll$value_rescale <- 1 - bound_poll$value
-bound_poll$pollinating[bound_poll$pollinating == "Y"] <- 1
-bound_poll$pollinating[bound_poll$pollinating == "N"] <- 0
-bound_poll$pollinating <- as.numeric(bound_poll$pollinating)
-
-
 
 ### set up the final dataframe
 # create list of data and vectors for assigning new column

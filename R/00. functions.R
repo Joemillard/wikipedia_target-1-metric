@@ -164,3 +164,23 @@ extract_polls <- function(data, poll){
   
   return(unique_species)
 }
+
+# adjust the lambdas for each of the subsets with random values
+adjust_lambda <- function(x){
+  data <- melt(x, id = c("X", "SpeciesSSet", "Freq"))
+  data <- inner_join(data, random_wiki_lpi, by = c("variable" = "date"))
+  data$adjusted_lambda <- data$value - data$lamda
+  data <- data %>%
+    dplyr::select(X, SpeciesSSet, Freq, variable, adjusted_lambda)
+  
+  data <- dcast(data, X + SpeciesSSet + Freq ~ variable)
+  return(data)
+}
+
+# function to unique the articles with taxonid 
+select_col <- function(data) {
+  fin <- data %>%
+    dplyr::select(article, taxonid) %>%
+    unique()
+  return(fin)
+}
