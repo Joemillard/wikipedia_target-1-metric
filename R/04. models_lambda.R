@@ -11,13 +11,13 @@ library(GGally)
 source("R/00. functions.R")
 
 # read in lambda files
-insect_y_lambda <- read.csv("insect_Y_data_lambda.csv", stringsAsFactors = FALSE)
-insect_n_lambda <- read.csv("insect_N_data_lambda.csv", stringsAsFactors = FALSE)
-bird_y_lambda <- read.csv("bird_Y_data_lambda.csv", stringsAsFactors = FALSE)
-bird_n_lambda <- read.csv("bird_N_data_lambda.csv", stringsAsFactors = FALSE)
-mammal_y_lambda <- read.csv("mammal_Y_data_lambda.csv", stringsAsFactors = FALSE)
-mammal_n_lambda <- read.csv("mammal_N_data_lambda.csv", stringsAsFactors = FALSE)
-random_wiki_lpi <- readRDS("lpi_trend_random_3.rds")
+insect_y_lambda <- read.csv("data/insect_Y_data_lambda.csv", stringsAsFactors = FALSE)
+insect_n_lambda <- read.csv("data/insect_N_data_lambda.csv", stringsAsFactors = FALSE)
+bird_y_lambda <- read.csv("data/bird_Y_data_lambda.csv", stringsAsFactors = FALSE)
+bird_n_lambda <- read.csv("data/bird_N_data_lambda.csv", stringsAsFactors = FALSE)
+mammal_y_lambda <- read.csv("data/mammal_Y_data_lambda.csv", stringsAsFactors = FALSE)
+mammal_n_lambda <- read.csv("data/mammal_N_data_lambda.csv", stringsAsFactors = FALSE)
+random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -36,16 +36,9 @@ random_wiki_lpi$date <- paste("X", random_wiki_lpi$date, sep = "")
 iucn_pollinators <- readRDS("iucn_pollinators_comp.rds")
 
 # pollinators with redlist id
-bird_iucn_id <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
-insect_iucn_id <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
-mammal_iucn_id <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE) 
-
-# count number of characters in each aricle
-pollination_text <- readRDS("scraped_pollination_text.rds")
-pollination_text <- rbindlist(pollination_text)
-pollination_characters <- pollination_text %>%
-  group_by(doc_id) %>%
-  summarise(no_characters = nchar(text))
+bird_iucn_id <- read.csv("data/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
+insect_iucn_id <- read.csv("data/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
+mammal_iucn_id <- read.csv("data/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE) 
 
 # combine taxa groupings as list
 pollinating_taxa <- list(bird_iucn_id, insect_iucn_id, mammal_iucn_id)
@@ -54,7 +47,6 @@ pollinating_taxa <- list(bird_iucn_id, insect_iucn_id, mammal_iucn_id)
 all_taxa_ids <- lapply(pollinating_taxa, select_col) %>% 
   rbindlist() %>%
   mutate(article = gsub(" ", "_", article))
-
 
 # redlist for iucn red list level
 redlist <- read.csv("wikipedia_data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
@@ -124,17 +116,10 @@ fin_frame <- inner_join(joined_pollinator, bound_poll, by = c("article" = "Var1"
 fin_frame_2 <- inner_join(fin_frame, all_taxa_ids, by = c("article" = "article"))
 
 # bind extinction category onto final dataframe
-fin_frame_4 <- inner_join(fin_frame_2, redlist, by = "taxonid")
-
-# bind the dataframe onto total_views
-#fin_frame_4 <- inner_join(fin_frame_3, total_views, by = "taxonid")
-
-# bind dataframe onto number of characters
-fin_frame_5 <- inner_join(fin_frame_4, pollination_characters, by = c("article" = "doc_id"))
+fin_frame_5 <- inner_join(fin_frame_2, redlist, by = "taxonid")
 
 # change factors for NT and LC
 fin_frame_5$category <- plyr::revalue(fin_frame_5$category, c("LR/nt" = "NT", "LR/cd"="NT", "LR/lc" = "LC"))
-
 
 ### models for predicting lambda and pollination relatedness -- drop all_total from the model, and check if have similar result
 # similarity value in this model
