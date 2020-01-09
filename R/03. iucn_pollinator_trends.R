@@ -11,9 +11,9 @@ library(tm)
 # iucn_views <- read.csv("wikipedia_data/iucn_total_monthly_views_user.csv", stringsAsFactors = FALSE)
 
 # read in view data for daily views
-bird_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/bird_user_trends.csv", stringsAsFactors = FALSE)
-mammal_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/mammal_user_trends.csv", stringsAsFactors = FALSE)
-insect_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/insect_user_trends.csv", stringsAsFactors = FALSE)
+bird_views <- read.csv("data/bird_user_trends.csv", stringsAsFactors = FALSE)
+mammal_views <- read.csv("data/mammal_user_trends.csv", stringsAsFactors = FALSE)
+insect_views <- read.csv("data/insect_user_trends.csv", stringsAsFactors = FALSE)
 
 # aggregate the views for each of birds, mammals, and insects by month
 bird_av <- run_dat(bird_views, av_all = FALSE)
@@ -25,7 +25,7 @@ iucn_views <- rbind(bird_av, mammal_av, insect_av)
 iucn_views$article <- gsub("_", " ", iucn_views$article)
 
 # read in pollinator data and count orders have pollinators and subset out those without pollinators
-iucn_pollinators <- readRDS("IUCN_pollinators.rds")
+iucn_pollinators <- readRDS("data/IUCN_pollinators.rds")
 
 # subset out duplicated pollinators - identify all those with a Y, make unique, then subset these from the N
 iucn_pollinators <- lapply(iucn_pollinators, subset_dup)
@@ -86,7 +86,7 @@ iucn_views_poll <- lapply(iucn_views_poll, rescale_iucn)
 iucn_pollinators_comp <- lapply(iucn_views_poll, select_comp)
 
 # save pollinator list as rds
-saveRDS(iucn_pollinators_comp, "iucn_pollinators_comp.rds")
+saveRDS(iucn_pollinators_comp, "data/iucn_pollinators_comp.rds")
 
 # separate lists for Y/N pollinating by class, and create list of 6 objects
 lpi_structured_Y <- lapply(iucn_pollinators_comp, structure_lpi, poll = "Y")
@@ -111,11 +111,11 @@ for(i in 1:length(groupings)){
 }
 
 # save rds for pollinator trends
-saveRDS(lpi_trends, "lpi_trends_pollinator_comp-series_2.rds")
+saveRDS(lpi_trends, "data/lpi_trends_pollinator_comp-series_2.rds")
 
 
 ### make plot for trends
-lpi_trends <- readRDS("lpi_trends_pollinator_comp-series_2.rds")
+lpi_trends <- readRDS("data/lpi_trends_pollinator_comp-series_2.rds")
 
 # add column for class and pollinating
 for(i in 1:length(class_group)){
@@ -141,7 +141,7 @@ lpi_trends %>%
 
 ### random monthly trend
 # random_monthly_trends_init <- read.csv("wikipedia_data/random_total_monthly_views_user.csv", stringsAsFactors = FALSE)
-random_monthly_trends_init <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/random_user_trends.csv", stringsAsFactors = FALSE)
+random_monthly_trends_init <- read.csv("data/random_user_trends.csv", stringsAsFactors = FALSE)
 
 # aggregate the views for the random trend
 random_monthly_trends_init <- run_dat(random_monthly_trends_init, av_all = FALSE)
@@ -181,8 +181,8 @@ write.table(infile_df, "random_pages_all_infile.txt", row.names = F)
 
 # run rlpi and save as rds
 random_wiki_lpi <- LPIMain("random_pages_all_infile.txt", REF_YEAR = 1977, PLOT_MAX = 2029, basedir = ".")
-saveRDS(random_wiki_lpi, "lpi_trend_random_3.rds")
-random_wiki_lpi <- readRDS("lpi_trend_random_3.rds")
+saveRDS(random_wiki_lpi, "data/lpi_trend_random_3.rds")
+random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
 
 # adjust the year column
 random_wiki_lpi$date <- as.numeric(rownames(random_wiki_lpi))
