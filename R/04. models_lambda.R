@@ -33,7 +33,7 @@ random_wiki_lpi$date <- paste("X", random_wiki_lpi$date, sep = "")
 
 # read in pollinator data and count orders have pollinators and subset out those without pollinators
 # built in iucn_polliantor trends
-iucn_pollinators <- readRDS("iucn_pollinators_comp.rds")
+iucn_pollinators <- readRDS("data/iucn_pollinators_comp.rds")
 
 # pollinators with redlist id
 bird_iucn_id <- read.csv("data/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
@@ -49,7 +49,7 @@ all_taxa_ids <- lapply(pollinating_taxa, select_col) %>%
   mutate(article = gsub(" ", "_", article))
 
 # redlist for iucn red list level
-redlist <- read.csv("wikipedia_data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
+redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
   mutate(species = gsub(" ", "_", species)) %>%
   dplyr::select(species, category, scientific_name, taxonid)
 
@@ -109,11 +109,8 @@ lpi_structured <- rbindlist(lpi_structured) %>%
 joined_pollinator <- inner_join(all_lambda, lpi_structured, by = c("SpeciesSSet" = "ID", "class", "pollinating")) %>%
   mutate(article = gsub(" ", "_", article))
 
-# bind similarity data onto lambda data
-fin_frame <- inner_join(joined_pollinator, bound_poll, by = c("article" = "Var1"))
-
 # bind taxonid onto final data frame
-fin_frame_2 <- inner_join(fin_frame, all_taxa_ids, by = c("article" = "article"))
+fin_frame_2 <- inner_join(joined_pollinator, all_taxa_ids, by = c("article" = "article"))
 
 # bind extinction category onto final dataframe
 fin_frame_5 <- inner_join(fin_frame_2, redlist, by = "taxonid")
