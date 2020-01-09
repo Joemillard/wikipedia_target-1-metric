@@ -150,17 +150,6 @@ plot(predict_lambda_step)
 anova(predict_lambda_step)
 #anova(predict_lambda_step_2)
 
-#fin_frame_5 %>%
- # ggplot() +
-  #geom_bar(aes(x = inc), stat= "count") +
-  #facet_grid(pollinating.x~class)
-
-#fin_frame_5 %>%
- # ggplot() +
-#  geom_point(aes(x = log10(value_rescale), y = av_lambda, colour = pollinating.x)) +
- # geom_smooth(aes(x = log10(value_rescale), y = av_lambda, colour = pollinating.x), method = "lm") +
- # facet_wrap(~class)
-
 predicted_values <- predict(predict_lambda_step, fin_frame_5, se.fit = TRUE)
 
 fin_frame_5$predicted_values <- predicted_values$fit
