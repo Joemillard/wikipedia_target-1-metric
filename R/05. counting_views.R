@@ -3,10 +3,10 @@ library(dplyr)
 library(data.table)
 library(forcats)
 
-bird_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/bird_user_trends.csv", stringsAsFactors = FALSE)
-mammal_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/mammal_user_trends.csv", stringsAsFactors = FALSE)
-insect_views <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/insect_user_trends.csv", stringsAsFactors = FALSE)
-random_monthly_trends_init <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/random_user_trends.csv", stringsAsFactors = FALSE)
+bird_views <- read.csv("data/bird_user_trends.csv", stringsAsFactors = FALSE)
+mammal_views <- read.csv("data/mammal_user_trends.csv", stringsAsFactors = FALSE)
+insect_views <- read.csv("data/insect_user_trends.csv", stringsAsFactors = FALSE)
+random_monthly_trends_init <- read.csv("data/random_user_trends.csv", stringsAsFactors = FALSE)
 
 # read in pollinator data and count orders have pollinators and subset out those without pollinators
 iucn_pollinators <- readRDS("IUCN_pollinators.rds")
