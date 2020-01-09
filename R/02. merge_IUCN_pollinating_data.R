@@ -2,26 +2,29 @@
 library(dplyr)
 
 # read in species files
-actin <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_ACTINOPTERYGII_monthly_views_user.csv", stringsAsFactors = FALSE)
-amphib <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_AMPHIBIA_monthly_views_user.csv", stringsAsFactors = FALSE)
-arach <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_ARACHNIDA_monthly_views_user.csv", stringsAsFactors = FALSE)
-aves <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
-chrondri <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_CHONDRICHTHYES_monthly_views_user.csv", stringsAsFactors = FALSE)
-insect <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
-mammal <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE)
-reptile <- read.csv("wikipedia_data/view_data_by_class_totals_useronly/iucn_REPTILIA_monthly_views_user.csv", stringsAsFactors = FALSE)
+actin <- read.csv("data/iucn_ACTINOPTERYGII_monthly_views_user.csv", stringsAsFactors = FALSE)
+amphib <- read.csv("data/iucn_AMPHIBIA_monthly_views_user.csv", stringsAsFactors = FALSE)
+arach <- read.csv("data/iucn_ARACHNIDA_monthly_views_user.csv", stringsAsFactors = FALSE)
+aves <- read.csv("data/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
+chrondri <- read.csv("data/iucn_CHONDRICHTHYES_monthly_views_user.csv", stringsAsFactors = FALSE)
+insect <- read.csv("data/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
+mammal <- read.csv("data/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE)
+reptile <- read.csv("data/iucn_REPTILIA_monthly_views_user.csv", stringsAsFactors = FALSE)
+
+# source the functions R script
+source("R/00. functions.R")
 
 # read in onezoom leaf mapping
-ordered_leaves <- read.csv("~/PhD/Aims/Aim 3 - quantifying pollinator cultural value/data/Rosindell_taxonomy/ordered_leaves.csv", stringsAsFactors = FALSE)
+ordered_leaves <- read.csv("data/ordered_leaves.csv", stringsAsFactors = FALSE)
 
 # read in the pollinator data
-pollinat <- read.csv("C:/Users/Joeym/Documents/PhD/Aims/Aim 2 - understand response to environmental change/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE)
+pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE)
 
 # make list of species dataframes
 taxa <- list(actin, amphib, arach, aves, chrondri, insect, mammal, reptile)
 
 # read in iucn_redlist data
-iucn_redlist <- read.csv("wikipedia_data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
+iucn_redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
   mutate(taxonid = as.character(taxonid))
 
 # get list of all unique IUCN taxonids for all IUCN species with wiki data
