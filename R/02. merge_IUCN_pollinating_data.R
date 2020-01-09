@@ -25,13 +25,6 @@ iucn_redlist <- read.csv("wikipedia_data/redlist_data_2019_10_11_15_05_45.csv", 
   mutate(taxonid = as.character(taxonid))
 
 # get list of all unique IUCN taxonids for all IUCN species with wiki data
-select_IUCN_IDs <- function(data) {
-  result <- data %>%
-    select(taxonid) %>%
-    unique()
-  return(result)
-}
-
 unique_IUCN <- lapply(taxa, select_IUCN_IDs)
 
 # filter the ordered leaves for all those with IUCN wiki views
@@ -42,29 +35,9 @@ ordered_leaves_wiki <- ordered_leaves %>%
 ordered_leaves_wiki <- inner_join(ordered_leaves_wiki, iucn_redlist, by = c("iucn" = "taxonid"))
 
 # match the IUCN species with wiki views to the pollinator data
-merge_wiki <- function(data) {
-  data$taxonid <- as.character(data$taxonid)
-  joined_wiki <- inner_join(data, ordered_leaves_wiki, by = c("taxonid" = "iucn"))
-  joined_wiki <- joined_wiki %>%
-    select(article, year, month, total_views, taxonid, name, order_name, family_name, class_name)
-  return(joined_wiki)
-}
-
 merged_taxa <- lapply(taxa, merge_wiki)
 
 # for each taxa subset, merge with the pollinator data and create new column for pollinating/non
-merge_pollinat <- function(data) {
-  joined_pollinat <- full_join(data, pollinat, by = c("name" = "scientific_name"))
-  joined_pollinat <- joined_pollinat %>%
-    filter(!is.na(article)) %>%
-    select(article, taxonid, name, Class, Order, confidence, fact_conf, class_name, order_name) %>%
-    unique()
-  
-  joined_pollinat$pollinating[is.na(joined_pollinat$Class)] <- "N"
-  joined_pollinat$pollinating[!is.na(joined_pollinat$Class)] <- "Y"
-  return(joined_pollinat)
-}
-
 merged_pollinators <- lapply(merged_taxa, merge_pollinat)
 
 saveRDS(merged_pollinators, "IUCN_pollinators.rds")
