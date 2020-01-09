@@ -155,7 +155,6 @@ predicted_values <- predict(predict_lambda_step, fin_frame_5, se.fit = TRUE)
 fin_frame_5$predicted_values <- predicted_values$fit
 fin_frame_5$predicted_values_se <- predicted_values$se.fit
 
-
 fin_frame_6 <- fin_frame_5 %>%
   dplyr::select(class, pollinating.x, predicted_values, predicted_values_se) %>%
   unique()
@@ -175,10 +174,6 @@ fin_frame_6 %>%
     theme_bw() +
     theme(legend.position = "none")
   
-
-
-
-
 ggsave("lambda_class_pollinating_pred_4.png", dpi = 350, scale = 1)
 ################
 
