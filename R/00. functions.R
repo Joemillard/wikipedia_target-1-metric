@@ -147,6 +147,19 @@ structure_lpi <- function(iucn_no_dup, poll){
     select(Binomial, ID, year, popvalue)
 }
 
+# select just for new year column, rename columns, and remove NAs
+structure_lpi_overall <- function(iucn_no_dup, poll){
+  iucn_no_dup <- iucn_no_dup %>%
+    select(article, dec_date, av_views) %>%
+    mutate(ID = as.character(as.numeric(as.factor(article)))) %>%
+    rename(Binomial = article) %>%
+    rename(year = dec_date) %>%
+    rename(popvalue = av_views) %>%
+    filter(complete.cases(.)) %>%
+    mutate(Binomial = ID) %>%
+    select(Binomial, ID, year, popvalue)
+}
+
 # bind the random values back onto main dataframe and calculate adjusted lpi
 join_random <- function(data){
   data$Year <- as.character(data$Year)

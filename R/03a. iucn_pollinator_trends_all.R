@@ -6,6 +6,7 @@ library(ggplot2)
 library(forcats)
 library(rvest)
 library(tm)
+library(patchwork)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -105,12 +106,12 @@ for (i in 1:length(lpi_trends_corr)) {
 }
 
 ### make plot of trends over time for each grouping, adjusted for random
-lpi_trends_corr %>%
+overall_trends <- lpi_trends_corr %>%
   rbindlist %>% 
   filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(Year)) %>%
   #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
-  #mutate(class = factor(class, levels = c("bird", "insect", "mammal"), labels = c("Birds", "Insects", "Mammals"))) %>%
+  mutate(class = factor(class, levels = c("birds", "insects", "mammals"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() +
   geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
   geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
@@ -120,6 +121,7 @@ lpi_trends_corr %>%
   scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
   theme_bw() +
+  ggtitle("B") +
   ylab("Random adjusted index")
 
 ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
@@ -127,12 +129,9 @@ ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 ## modelling of lambda values in relation to pollinating, class, system
 
 # read in lambda files
-insect_y_lambda <- read.csv("data/insect_Y_data_lambda.csv", stringsAsFactors = FALSE)
-insect_n_lambda <- read.csv("data/insect_N_data_lambda.csv", stringsAsFactors = FALSE)
-bird_y_lambda <- read.csv("data/bird_Y_data_lambda.csv", stringsAsFactors = FALSE)
-bird_n_lambda <- read.csv("data/bird_N_data_lambda.csv", stringsAsFactors = FALSE)
-mammal_y_lambda <- read.csv("data/mammal_Y_data_lambda.csv", stringsAsFactors = FALSE)
-mammal_n_lambda <- read.csv("data/mammal_N_data_lambda.csv", stringsAsFactors = FALSE)
+bird_lambda <- read.csv("birds_data_lambda.csv", stringsAsFactors = FALSE)
+insect_lambda <- read.csv("insects_data_lambda.csv", stringsAsFactors = FALSE)
+mammal_lambda <- read.csv("mammals_data_lambda.csv", stringsAsFactors = FALSE)
 random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
 
 # adjust each of the lambda values for random
@@ -168,9 +167,10 @@ redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactor
 ### set up the final dataframe
 # create list of data and vectors for assigning new column
 class_group <- c("bird", "insect", "mammal")
+lambdas <- list(bird_lambda, insect_lambda, mammal_lambda)
 
 # adjust lambda values for the random
-data <- lapply(data, adjust_lambda)
+data <- lapply(lambdas, adjust_lambda)
 
 # run loop to add columns for pollinating and class
 for(i in 1:length(data)){
@@ -187,96 +187,41 @@ all_lambda$lambda_summed <- rowSums(all_lambda[, c(5:56)])
 all_lambda$av_lambda <- all_lambda$lambda_summed / 52
 all_lambda$SpeciesSSet <- as.character(all_lambda$SpeciesSSet)
 
-### bind pollination data onto the lambda lpi data
-# select just for new year column, rename columns, and remove NAs
-retrieve_lpi_id <- function(iucn_no_dup, poll){
-  iucn_no_dup <- iucn_no_dup %>%
-    dplyr::select(article, dec_date, total_views) %>%
-    mutate(ID = as.character(as.numeric(as.factor(article)))) %>%
-    dplyr::select(article, ID)
-}
-
-# retrieve lpi ids for each 
-lpi_id_Y <- lapply(iucn_pollinators, retrieve_lpi_id, poll = "Y")
-
-# set up vectors to assign to columns
-classes <- c("bird", "insect", "mammal")
-
-for(i in 1:length(lpi_structured)){
-  lpi_structured[[i]]$class <- classes[i]
-  lpi_structured[[i]]$pollinating <- pollinat[i]
-}
-
-lpi_structured <- rbindlist(lpi_structured) %>%
-  unique()
-
-# bind lpi ids to the lambdas and mutate article to join onto sim
-joined_pollinator <- inner_join(all_lambda, lpi_structured, by = c("SpeciesSSet" = "ID", "class", "pollinating")) %>%
-  mutate(article = gsub(" ", "_", article))
-
-# bind taxonid onto final data frame
-fin_frame_2 <- inner_join(joined_pollinator, all_taxa_ids, by = c("article" = "article"))
-
-# bind extinction category onto final dataframe
-fin_frame_5 <- inner_join(fin_frame_2, redlist, by = "taxonid")
-
-# change factors for NT and LC
-fin_frame_5$category <- plyr::revalue(fin_frame_5$category, c("LR/nt" = "NT", "LR/cd"="NT", "LR/lc" = "LC"))
-
 ### models for predicting lambda and pollination relatedness -- drop all_total from the model, and check if have similar result
 # similarity value in this model
-predict_lambda_1 <- lm(av_lambda ~ class * pollinating, data = fin_frame_5)
+predict_lambda_all <- lm(av_lambda ~ class, data = all_lambda)
 
-# binomial model test
-#fin_frame_6 = fin_frame_5
-#lambdas = fin_frame_6[, 5:56]
-fin_frame_5$inc = fin_frame_5$av_lambda > 0
-fin_frame_5$inc = fin_frame_5$av_lambda <= 0
+summary(predict_lambda_all)
 
-predict_lambda_glm <- glm(inc ~ class * pollinating.x, data = fin_frame_5, family = "binomial")
-####
-predic_lambda_glm_step <- step(predict_lambda_glm, direction = "both", trace = TRUE)
-summary(predic_lambda_glm_step)
-
-summary(predict_lambda_1)
-plot(predict_lambda_1)
-#summary(predict_lambda_2)
-anova(predict_lambda_1)
-#anova(predict_lambda_2)
-
-predict_lambda_step <- step(predict_lambda_1, direction = "both", trace = TRUE)
-
-#predict_lambda_step_2 <- stepAIC(predict_lambda_2, direction = "both", 
-#trace = FALSE)
+predict_lambda_step <- step(predict_lambda_all, direction = "both", trace = TRUE)
 
 summary(predict_lambda_step)
 plot(predict_lambda_step)
-#summary(predict_lambda_step_2)
 anova(predict_lambda_step)
-#anova(predict_lambda_step_2)
 
-predicted_values <- predict(predict_lambda_step, fin_frame_5, se.fit = TRUE)
+predicted_values <- predict(predict_lambda_step, all_lambda, se.fit = TRUE)
 
-fin_frame_5$predicted_values <- predicted_values$fit
-fin_frame_5$predicted_values_se <- predicted_values$se.fit
+all_lambda$predicted_values <- predicted_values$fit
+all_lambda$predicted_values_se <- predicted_values$se.fit
 
-fin_frame_6 <- fin_frame_5 %>%
-  dplyr::select(class, pollinating, predicted_values, predicted_values_se) %>%
+fin_frame_6 <- all_lambda %>%
+  dplyr::select(class, predicted_values, predicted_values_se) %>%
   unique()
 
-fin_frame_6 %>%
-  mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
+lambda_overall <- fin_frame_6 %>%
   mutate(class = factor(class, levels = c("bird", "insect", "mammal"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() + 
-  geom_errorbar(aes(x = pollinating, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se)), colour = pollinating)) +
-  geom_point(aes(x = pollinating, y = predicted_values, colour = pollinating)) +
-  facet_grid(~class) +
+  geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se)), colour = class)) +
+  geom_point(aes(x = class, y = predicted_values, colour = class)) +
+  #facet_grid(~class) +
   ylab("Random adjusted average lambda") +
   xlab("Pollinating") +
-  scale_y_continuous(breaks = c(-0.001, 0, 0.001), labels = c(-0.001, 0, 0.001)) +
-  scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
-  scale_colour_manual(name = "Pollinating", values = c("black", "red")) +
+  ggtitle("A") +
+  scale_y_continuous(breaks = c(-0.001, -0.0005, 0, 0.0005), labels = c("-0.001", "-0.0005", "0", "0.0005")) +
+  scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   theme(legend.position = "none")
 
-ggsave("lambda_class_pollinating_pred_4.png", dpi = 350, scale = 1)
+lambda_overall + overall_trends + patchwork::plot_layout(ncol = 2)
+
+ggsave("overall_trends_figure.png", dpi = 350, scale = 1.1)
