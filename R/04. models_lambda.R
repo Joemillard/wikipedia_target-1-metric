@@ -120,7 +120,7 @@ fin_frame_5$category <- plyr::revalue(fin_frame_5$category, c("LR/nt" = "NT", "L
 
 ### models for predicting lambda and pollination relatedness -- drop all_total from the model, and check if have similar result
 # similarity value in this model
-predict_lambda_1 <- lm(av_lambda ~ class * pollinating.x, data = fin_frame_5)
+predict_lambda_1 <- lm(av_lambda ~ class * pollinating, data = fin_frame_5)
 
 # binomial model test
 #fin_frame_6 = fin_frame_5
@@ -156,15 +156,15 @@ fin_frame_5$predicted_values <- predicted_values$fit
 fin_frame_5$predicted_values_se <- predicted_values$se.fit
 
 fin_frame_6 <- fin_frame_5 %>%
-  dplyr::select(class, pollinating.x, predicted_values, predicted_values_se) %>%
+  dplyr::select(class, pollinating, predicted_values, predicted_values_se) %>%
   unique()
 
 fin_frame_6 %>%
-  mutate(pollinating.x = factor(pollinating.x, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
+  mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
   mutate(class = factor(class, levels = c("bird", "insect", "mammal"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() + 
-  geom_errorbar(aes(x = pollinating.x, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se)), colour = pollinating.x)) +
-  geom_point(aes(x = pollinating.x, y = predicted_values, colour = pollinating.x)) +
+  geom_errorbar(aes(x = pollinating, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se)), colour = pollinating)) +
+  geom_point(aes(x = pollinating, y = predicted_values, colour = pollinating)) +
     facet_grid(~class) +
     ylab("Random adjusted average lambda") +
     xlab("Pollinating") +
