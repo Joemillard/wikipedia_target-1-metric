@@ -8,6 +8,8 @@ mammal_views <- read.csv("data/mammal_user_trends.csv", stringsAsFactors = FALSE
 insect_views <- read.csv("data/insect_user_trends.csv", stringsAsFactors = FALSE)
 random_monthly_trends_init <- read.csv("data/random_user_trends.csv", stringsAsFactors = FALSE)
 
+length(unique(bird_views$timestamp))
+
 # read in pollinator data and count orders have pollinators and subset out those without pollinators
 iucn_pollinators <- readRDS("IUCN_pollinators.rds")
 
