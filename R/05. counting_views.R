@@ -80,5 +80,4 @@ mammal_spec <- length(unique(mammal_views$article))
 insect_spec <- length(unique(insect_views$article))
 rand_spec <- length(unique(random_monthly_trends_init$article))
 
-
 bird_spec + mammal_spec + insect_spec + rand_spec
