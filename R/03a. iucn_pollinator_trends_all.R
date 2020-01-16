@@ -126,8 +126,29 @@ overall_trends <- lpi_trends_corr %>%
 
 ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 
-## modelling of lambda values in relation to pollinating, class, system
+## plot of insect change with key publications
+overall_trends_insects <- lpi_trends_corr %>%
+  rbindlist %>% 
+  filter(class == "insects") %>%
+  filter(LPI_final.x !=  -99) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
+  mutate(class = factor(class, levels = c("insects"), labels = c("Insects"))) %>%
+  ggplot() +
+  geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
+  geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
+  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
+  geom_segment(aes(x = 2019.16666666667, xend = 2019.16666666667, y = 0.6, yend = 0.9), linetype = "dotted", size = 1, colour = "red") +
+  #facet_wrap(~class, scales = "free_x") +
+  scale_colour_manual(name = "Taxonomic class", values = c("#CC79A7")) +
+  #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
+  theme_bw() +
+  ylab("Random adjusted index")
 
+ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
+
+## modelling of lambda values in relation to pollinating, class, system
 # read in lambda files
 bird_lambda <- read.csv("birds_data_lambda.csv", stringsAsFactors = FALSE)
 insect_lambda <- read.csv("insects_data_lambda.csv", stringsAsFactors = FALSE)
