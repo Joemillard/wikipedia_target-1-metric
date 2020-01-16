@@ -215,7 +215,7 @@ lambda_overall <- fin_frame_6 %>%
   geom_point(aes(x = class, y = predicted_values, colour = class)) +
   #facet_grid(~class) +
   ylab("Random adjusted average lambda") +
-  xlab("Pollinating") +
+  xlab("Class") +
   ggtitle("A") +
   scale_y_continuous(breaks = c(-0.001, -0.0005, 0, 0.0005), labels = c("-0.001", "-0.0005", "0", "0.0005")) +
   scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
@@ -224,4 +224,4 @@ lambda_overall <- fin_frame_6 %>%
 
 lambda_overall + overall_trends + patchwork::plot_layout(ncol = 2)
 
-ggsave("overall_trends_figure.png", dpi = 350, scale = 1.1)
+ggsave("overall_trends_figure_2.png", dpi = 350, scale = 1.1)
