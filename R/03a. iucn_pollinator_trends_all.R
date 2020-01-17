@@ -7,6 +7,7 @@ library(forcats)
 library(rvest)
 library(tm)
 library(patchwork)
+library(ggrepel)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -127,26 +128,25 @@ overall_trends <- lpi_trends_corr %>%
 ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 
 ## plot of insect change with key publications
+altmetric <- data.frame(x = c(2019.16666666667, 2018.83333333333, 2017.83333333333), y = c(0.7390624, 0.7628576, 0.7816953), size = c(5466, 2810, 6316), text = c("Sanchez-Bayo & Wyckhuys", "Lister & Garcia", "Hallmann et al"))
+
 overall_trends_insects <- lpi_trends_corr %>%
   rbindlist %>% 
   filter(class == "insects") %>%
   filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(Year)) %>%
-  #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
   mutate(class = factor(class, levels = c("insects"), labels = c("Insects"))) %>%
   ggplot() +
-  geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
-  geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
-  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
+  geom_line(aes(x = Year, y = LPI_final.x)) +
+  geom_label_repel(aes(x = x, y = y, label = text), fill= "black", colour = "white", data = altmetric, size = 3, point.padding = 0.3) +
+  geom_point(aes(x = x, y = y, size = size), data = altmetric, fill = NA) + 
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
-  geom_segment(aes(x = 2019.16666666667, xend = 2019.16666666667, y = 0.6, yend = 0.9), linetype = "dotted", size = 1, colour = "red") +
-  #facet_wrap(~class, scales = "free_x") +
-  scale_colour_manual(name = "Taxonomic class", values = c("#CC79A7")) +
-  #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
+  scale_size_continuous(name = "Altmetric") +
   theme_bw() +
-  ylab("Random adjusted index")
+  ylab("Random adjusted insect index") +
+  xlab("Year")
 
-ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
+ggsave("pollinating_trends_comp_insects.png", scale = 1, dpi = 350)
 
 ## modelling of lambda values in relation to pollinating, class, system
 # read in lambda files
