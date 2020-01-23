@@ -128,6 +128,11 @@ overall_trends <- lpi_trends_corr %>%
 
 ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 
+#############################
+
+
+
+
 ### confidence interval with bootstrapping
 # function for calculating lpi and adjusting
 calc_lpi_adj <- function(data){
@@ -233,6 +238,8 @@ overall_trends_conf <- lpi_trends_corr %>%
   theme_bw() +
   ggtitle("B") +
   ylab("Random adjusted index")
+
+###########################
 
 ## plot of insect change with key publications
 altmetric <- data.frame(x = c(2019.16666666667, 2018.83333333333, 2017.83333333333), y = c(0.7390624, 0.7628576, 0.7816953), size = c(5466, 2810, 6316), text = c("Sanchez-Bayo & Wyckhuys", "Lister & Garcia", "Hallmann et al"))
