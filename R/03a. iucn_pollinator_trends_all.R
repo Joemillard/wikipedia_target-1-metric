@@ -8,6 +8,7 @@ library(rvest)
 library(tm)
 library(patchwork)
 library(ggrepel)
+library(boot)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -88,7 +89,7 @@ lpi_trends <- lapply(lpi_trends, join_random)
 
 #### Robin calculating lambdas
 lpi_trends_corr = lpi_trends
-#
+
 for (i in 1:length(lpi_trends_corr)) {
   group_index = lpi_trends_corr[[i]]
   
@@ -126,6 +127,90 @@ overall_trends <- lpi_trends_corr %>%
   ylab("Random adjusted index")
 
 ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
+
+### confidence interval with bootstrapping
+# function for calculating lpi and adjusting
+calc_lpi_adj <- function(data){
+  
+    # randomly select 100 random species
+    iucn_pollinators_comp <- data
+    
+    set.seed(10)
+    
+    boostrap_conf <- list()
+  
+    for(i in 1:length(groupings)){
+      #bound_lpi <- list()
+      iucn_pollinators_comp_new <- list()
+      fin_adjusted_lpi <- list()
+      
+      unique_species <- unique(iucn_pollinators_comp[[i]]$ID)
+      
+      for(j in 1:2){
+        
+        row_indexes <- sample(unique_species, size = 3)
+        
+        iucn_pollinators_comp_new[[j]] <- iucn_pollinators_comp[[i]] %>% filter(ID %in% row_indexes)
+        
+        write.table(iucn_pollinators_comp_new[[j]], paste(groupings[i], "data.txt", sep = "_"), row.names = FALSE)
+        infile_df <- data.frame(FileName = paste(groupings[i], "data.txt", sep = "_"), Group = 1, Weighting = 1)
+        write.table(infile_df, paste(groupings[i], "pages_all_infile.txt", sep = "_"), row.names = FALSE)
+    
+        lpi_trends <- list()
+        lpi_trends_corr <- list()
+        
+        lpi_trends[[j]] <- LPIMain(paste(groupings[i], "pages_all_infile.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2029)
+        
+        # add column for class and pollinating
+        lpi_trends[[j]]$class <- groupings[i]
+        lpi_trends[[j]]$date <- as.numeric(rownames(lpi_trends[[j]]))
+        lpi_trends[[j]]$Year <- (lpi_trends[[j]]$date - 1970)/12 + 2015
+        
+        lpi_trends[[j]] <- join_random(lpi_trends[[j]])
+      
+        group_index = lpi_trends[[j]]
+        
+        index_values = group_index$LPI_final.x
+        lambdas = diff(log10(index_values[1:53]))
+        
+        random_index = group_index$LPI_final.y
+        r_lambdas = diff(log10(random_index[1:53]))
+        
+        corrected_lambdas = lambdas - r_lambdas
+        
+        corrected_index = cumprod(10^c(0, corrected_lambdas))
+        
+        lpi_trends[[j]]$adjusted_lpi[1:53] = corrected_index
+        
+        #print(lpi_trends[[j]])
+      
+        fin_adjusted_lpi[[j]] <- data.frame("Year" = lpi_trends[[j]]$Year, "LPI" = lpi_trends[[j]]$adjusted_lpi)
+        
+        #print(fin_adjusted_lpi)
+        
+      }
+      
+      bound_lpi <- rbindlist(fin_adjusted_lpi)
+      
+      print(bound_lpi)
+      
+      boostrap_conf[[i]] <- bound_lpi %>% mutate(class = groupings[i])
+      
+    }
+    
+    boostrap_conf <- data.table::rbindlist(boostrap_conf)
+    
+    #print(boostrap_conf)
+    
+    return(boostrap_conf)
+} 
+
+fin <- calc_lpi_adj(iucn_pollinators_comp)
+
+# calculate confidence interval - which means values do I use?
+fin_conf <- fin %>% 
+  group_by(class, Year) %>%
+  summarise(conf = 1.96())
 
 ## plot of insect change with key publications
 altmetric <- data.frame(x = c(2019.16666666667, 2018.83333333333, 2017.83333333333), y = c(0.7390624, 0.7628576, 0.7816953), size = c(5466, 2810, 6316), text = c("Sanchez-Bayo & Wyckhuys", "Lister & Garcia", "Hallmann et al"))
