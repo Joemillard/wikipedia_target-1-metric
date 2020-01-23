@@ -146,9 +146,9 @@ calc_lpi_adj <- function(data){
       
       unique_species <- unique(iucn_pollinators_comp[[i]]$ID)
       
-      for(j in 1:2){
+      for(j in 1:50){
         
-        row_indexes <- sample(unique_species, size = 3)
+        row_indexes <- sample(unique_species, size = 50)
         
         iucn_pollinators_comp_new[[j]] <- iucn_pollinators_comp[[i]] %>% filter(ID %in% row_indexes)
         
@@ -209,8 +209,30 @@ fin <- calc_lpi_adj(iucn_pollinators_comp)
 
 # calculate confidence interval - which means values do I use?
 fin_conf <- fin %>% 
-  group_by(class, Year) %>%
-  summarise(conf = 1.96())
+  dplyr::group_by(class, Year) %>%
+  dplyr::summarise(conf = 1.96 * (sd(LPI) / sqrt(length(LPI))))
+
+# new plot with confidence interval
+overall_trends_conf <- lpi_trends_corr %>%
+  rbindlist %>% 
+  inner_join(fin_conf, by = c("Year", "class")) %>%
+  filter(LPI_final.x !=  -99) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
+  mutate(class = factor(class, levels = c("birds", "insects", "mammals"), labels = c("Birds", "Insects", "Mammals"))) %>%
+  ggplot() +
+  geom_ribbon(aes(x = Year, ymin = LPI_final.x - conf, ymax = LPI_final.x + conf, fill = class), alpha = 0.5) +
+  geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
+  geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
+  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
+  #facet_wrap(~class, scales = "free_x") +
+  scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
+  scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
+  #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
+  theme_bw() +
+  ggtitle("B") +
+  ylab("Random adjusted index")
 
 ## plot of insect change with key publications
 altmetric <- data.frame(x = c(2019.16666666667, 2018.83333333333, 2017.83333333333), y = c(0.7390624, 0.7628576, 0.7816953), size = c(5466, 2810, 6316), text = c("Sanchez-Bayo & Wyckhuys", "Lister & Garcia", "Hallmann et al"))
