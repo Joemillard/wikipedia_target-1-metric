@@ -4,8 +4,6 @@ library(data.table)
 library(rlpi)
 library(ggplot2)
 library(forcats)
-library(rvest)
-library(tm)
 library(patchwork)
 library(ggrepel)
 library(boot)
@@ -41,21 +39,21 @@ groupings <- c("birds", "mammals", "insects")
 
 # write each file to table
 for(i in 1:length(groupings)){
-  write.table(iucn_pollinators_comp[[i]], paste(groupings[i], "data.txt", sep = "_"), row.names = FALSE)
-  infile_df <- data.frame(FileName = paste(groupings[i], "data.txt", sep = "_"), Group = 1, Weighting = 1)
-  write.table(infile_df, paste(groupings[i], "pages_all_infile.txt", sep = "_"), row.names = FALSE)
+  write.table(iucn_pollinators_comp[[i]], paste(groupings[i], "data_conf.txt", sep = "_"), row.names = FALSE)
+  infile_df <- data.frame(FileName = paste(groupings[i], "data_conf.txt", sep = "_"), Group = 1, Weighting = 1)
+  write.table(infile_df, paste(groupings[i], "pages_all_infile_conf.txt", sep = "_"), row.names = FALSE)
 }
 
 lpi_trends <- list()
 for(i in 1:length(groupings)){
-  lpi_trends[[i]] <- LPIMain(paste(groupings[i], "pages_all_infile.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2029)
+  lpi_trends[[i]] <- LPIMain(paste(groupings[i], "pages_all_infile_conf.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2029)
 }
 
 # save rds for pollinator trends
-saveRDS(lpi_trends, "data/lpi_trends_pollinator_comp-series_all.rds")
+saveRDS(lpi_trends, "data/lpi_trends_pollinator_comp-series_all_conf.rds")
 
 ### make plot for trends
-lpi_trends <- readRDS("data/lpi_trends_pollinator_comp-series_all.rds")
+lpi_trends <- readRDS("data/lpi_trends_pollinator_comp-series_all_conf.rds")
 
 # add column for class and pollinating
 for(i in 1:length(groupings)){
@@ -107,70 +105,17 @@ for (i in 1:length(lpi_trends_corr)) {
   
 }
 
-### make plot of trends over time for each grouping, adjusted for random
-overall_trends <- lpi_trends_corr %>%
-  rbindlist %>% 
-  filter(LPI_final.x !=  -99) %>%
-  mutate(Year = as.numeric(Year)) %>%
-  #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
-  mutate(class = factor(class, levels = c("birds", "insects", "mammals"), labels = c("Birds", "Insects", "Mammals"))) %>%
-  ggplot() +
-  geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
-  geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
-  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
-  geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
-  #facet_wrap(~class, scales = "free_x") +
-  scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
-  #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
-  theme_bw() +
-  ggtitle("B") +
-  ylab("Random adjusted index")
-
-ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
-
-#############################
-
-
-### random monthly trend
-random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
-
-# adjust the year column
-random_wiki_lpi$date <- as.numeric(rownames(random_wiki_lpi))
-random_wiki_lpi$Year <- (random_wiki_lpi$date - 1970)/12 + 2015
-random_wiki_lpi$Year <- as.character(random_wiki_lpi$Year)
-
-random_index = random_wiki_lpi$LPI_final
-r_lambdas = diff(log10(random_index[1:53]))
-
 # Load lambda file of interest
-lambdas = read.csv("data/bird_N_data_lambda.csv", row.names = 1)
+bird_lambdas = read.csv("data/birds_data_conf_lambda.csv", row.names = 1)
+mammal_lambdas = read.csv("data/mammals_data_conf_lambda.csv", row.names = 1)
+insect_lambdas = read.csv("data/insects_data_conf_lambda.csv", row.names = 1)
 
-# Function to calculate *adjusted* index from lambdas selected by 'ind'
-create_lpi_adj <- function(lambdas, ind = 1:nrow(lambdas)) {
-  this_lambdas = lambdas[ind, ]
-  
-  mean_ann_lambda = colMeans(this_lambdas[4:ncol(this_lambdas)])
-  adj_lambdas = mean_ann_lambda - r_lambdas
-  
-  trend = cumprod(10^c(0, adj_lambdas))
-  return(trend)
-}
+# lambda groupings
+# create list of data and vectors for assigning new column
+lambda_data <- list(bird_lambdas, insect_lambdas, mammal_lambdas)
+class_group_lambda <- c("birds", "insects", "mammals")
 
-# bootstrap adjusted index
-dbi.boot = boot(lambdas, create_lpi_adj, R = 1000)
-
-# make dataframes and get 95% intervals
-boot_res = data.frame(LPI = dbi.boot$t0)
-boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
-boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
-boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
-
-# plot
-ggplot(boot_res, aes(x=Year, y=LPI, group=1)) + 
-  geom_line() + 
-  geom_ribbon(aes(ymin=LPI_lwr, ymax=LPI_upr), alpha=0.5)
-
-
+### script for calculating the confidence interval for each grouping
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   this_lambdas = lambdas[ind, ]
@@ -180,127 +125,53 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   trend = cumprod(10^c(0, mean_ann_lambda))
   return(trend)
 }
-# Random adjusted species trends
-adj_lambdas = sweep(this_lambdas[4:ncol(this_lambdas)],2,r_lambdas)
-# Bootstrap these to get confidence intervals
-dbi.boot = boot(adj_lambdas, create_lpi, R = 1000)
 
-# Construct dataframe and get 95% intervals
-boot_res = data.frame(LPI = dbi.boot$t0)
-boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
-boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
-boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
-
-# plot
-ggplot(boot_res, aes(x=Year, y=LPI, group=1)) + 
-  geom_line() + 
-  geom_ribbon(aes(ymin=LPI_lwr, ymax=LPI_upr), alpha=0.5)
-
-### confidence interval with bootstrapping
-# function for calculating lpi and adjusting
-calc_lpi_adj <- function(data){
+run_each_group <- function(data){
   
-    # randomly select 100 random species
-    iucn_pollinators_comp <- data
-    
-    set.seed(10)
-    
-    boostrap_conf <- list()
+  # Random adjusted species trends
+  adj_lambdas = sweep(data[4:ncol(data)],2,r_lambdas)
+  # Bootstrap these to get confidence intervals
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
   
-    for(i in 1:length(groupings)){
-      #bound_lpi <- list()
-      iucn_pollinators_comp_new <- list()
-      fin_adjusted_lpi <- list()
-      
-      unique_species <- unique(iucn_pollinators_comp[[i]]$ID)
-      
-      for(j in 1:50){
-        
-        row_indexes <- sample(unique_species, size = 50)
-        
-        iucn_pollinators_comp_new[[j]] <- iucn_pollinators_comp[[i]] %>% filter(ID %in% row_indexes)
-        
-        write.table(iucn_pollinators_comp_new[[j]], paste(groupings[i], "data.txt", sep = "_"), row.names = FALSE)
-        infile_df <- data.frame(FileName = paste(groupings[i], "data.txt", sep = "_"), Group = 1, Weighting = 1)
-        write.table(infile_df, paste(groupings[i], "pages_all_infile.txt", sep = "_"), row.names = FALSE)
-    
-        lpi_trends <- list()
-        lpi_trends_corr <- list()
-        
-        lpi_trends[[j]] <- LPIMain(paste(groupings[i], "pages_all_infile.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2029)
-        
-        # add column for class and pollinating
-        lpi_trends[[j]]$class <- groupings[i]
-        lpi_trends[[j]]$date <- as.numeric(rownames(lpi_trends[[j]]))
-        lpi_trends[[j]]$Year <- (lpi_trends[[j]]$date - 1970)/12 + 2015
-        
-        lpi_trends[[j]] <- join_random(lpi_trends[[j]])
-      
-        group_index = lpi_trends[[j]]
-        
-        index_values = group_index$LPI_final.x
-        lambdas = diff(log10(index_values[1:53]))
-        
-        random_index = group_index$LPI_final.y
-        r_lambdas = diff(log10(random_index[1:53]))
-        
-        corrected_lambdas = lambdas - r_lambdas
-        
-        corrected_index = cumprod(10^c(0, corrected_lambdas))
-        
-        lpi_trends[[j]]$adjusted_lpi[1:53] = corrected_index
-        
-        #print(lpi_trends[[j]])
-      
-        fin_adjusted_lpi[[j]] <- data.frame("Year" = lpi_trends[[j]]$Year, "LPI" = lpi_trends[[j]]$adjusted_lpi)
-        
-        #print(fin_adjusted_lpi)
-        
-      }
-      
-      bound_lpi <- rbindlist(fin_adjusted_lpi)
-      
-      print(bound_lpi)
-      
-      boostrap_conf[[i]] <- bound_lpi %>% mutate(class = groupings[i])
-      
-    }
-    
-    boostrap_conf <- data.table::rbindlist(boostrap_conf)
-    
-    #print(boostrap_conf)
-    
-    return(boostrap_conf)
-} 
+  # Construct dataframe and get 95% intervals
+  boot_res = data.frame(LPI = dbi.boot$t0)
+  boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
+  boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
+  boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
+  
+  return(boot_res)
+  
+}
 
-fin <- calc_lpi_adj(iucn_pollinators_comp)
+lpi_trends_adjusted <- lapply(lambda_data, run_each_group)
 
-# calculate confidence interval - which means values do I use?
-fin_conf <- fin %>% 
-  dplyr::group_by(class, Year) %>%
-  dplyr::summarise(conf = 1.96 * (sd(LPI) / sqrt(length(LPI))))
+# add column for class and pollinating
+for(i in 1:length(class_group_lambda)){
+  lpi_trends_adjusted[[i]]$class <- class_group_lambda[i]
+}
 
-# new plot with confidence interval
-overall_trends_conf <- lpi_trends_corr %>%
+lpi_confidence_int <- rbindlist(lpi_trends_adjusted)
+
+### make plot of trends over time for each grouping, adjusted for random
+overall_trends <- lpi_trends_corr %>%
   rbindlist %>% 
-  inner_join(fin_conf, by = c("Year", "class")) %>%
   filter(LPI_final.x !=  -99) %>%
+  inner_join(lpi_confidence_int, by = c("Year", "class")) %>%
   mutate(Year = as.numeric(Year)) %>%
-  #mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
   mutate(class = factor(class, levels = c("birds", "insects", "mammals"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_final.x - conf, ymax = LPI_final.x + conf, fill = class), alpha = 0.5) +
   geom_point(aes(x = Year, y = LPI_final.x, colour = class)) + 
   geom_line(aes(x = Year, y = LPI_final.x, colour = class)) +
-  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = class), alpha = 0.37) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   #facet_wrap(~class, scales = "free_x") +
   scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
-  #scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
   theme_bw() +
   ggtitle("B") +
   ylab("Random adjusted index")
+
+ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 
 ###########################
 
@@ -325,11 +196,11 @@ overall_trends_insects <- lpi_trends_corr %>%
 
 ggsave("pollinating_trends_comp_insects.png", scale = 1, dpi = 350)
 
-## modelling of lambda values in relation to pollinating, class, system
+## modelling of lambda values in relation to class
 # read in lambda files
-bird_lambda <- read.csv("birds_data_lambda.csv", stringsAsFactors = FALSE)
-insect_lambda <- read.csv("insects_data_lambda.csv", stringsAsFactors = FALSE)
-mammal_lambda <- read.csv("mammals_data_lambda.csv", stringsAsFactors = FALSE)
+bird_lambdas <- read.csv("data/birds_data_conf_lambda.csv", stringsAsFactors = FALSE)
+mammal_lambdas <- read.csv("data/mammals_data_conf_lambda.csv", stringsAsFactors = FALSE)
+insect_lambdas <- read.csv("data/insects_data_conf_lambda.csv", stringsAsFactors = FALSE)
 random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
 
 # adjust each of the lambda values for random
@@ -365,7 +236,7 @@ redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactor
 ### set up the final dataframe
 # create list of data and vectors for assigning new column
 class_group <- c("bird", "insect", "mammal")
-lambdas <- list(bird_lambda, insect_lambda, mammal_lambda)
+lambdas <- list(bird_lambdas, insect_lambdas, mammal_lambdas)
 
 # adjust lambda values for the random
 data <- lapply(lambdas, adjust_lambda)
@@ -422,4 +293,4 @@ lambda_overall <- fin_frame_6 %>%
 
 lambda_overall + overall_trends + patchwork::plot_layout(ncol = 2)
 
-ggsave("overall_trends_figure_2.png", dpi = 350, scale = 1.1)
+ggsave("overall_trends_figure_3.png", dpi = 350, scale = 1.1)
