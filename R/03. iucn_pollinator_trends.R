@@ -246,7 +246,7 @@ run_each_group <- function(data){
   # Random adjusted species trends
   adj_lambdas = sweep(data[4:ncol(data)],2,r_lambdas)
   # Bootstrap these to get confidence intervals
-  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
 
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
@@ -278,7 +278,7 @@ lpi_trends_corr %>%
   mutate(class = factor(class, levels = c("bird", "insect", "mammal"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() +
   geom_point(aes(x = Year, y = LPI_final.x, colour = pollinat)) + 
-  geom_ribbon(aes(x = Year, fill = pollinat, ymin = LPI_upr, ymax = LPI_lwr), alpha = 0.5) +
+  geom_ribbon(aes(x = Year, fill = pollinat, ymin = LPI_upr, ymax = LPI_lwr), alpha = 0.37) +
   geom_line(aes(x = Year, y = LPI_final.x, colour = pollinat)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   facet_wrap(~class, scales = "free_x") +
@@ -287,5 +287,5 @@ lpi_trends_corr %>%
   theme_bw() +
   ylab("Random adjusted index")
 
-ggsave("pollinating_trends_comp_5.png", scale = 1.1, dpi = 350)
+ggsave("pollinating_trends_comp_conf_2.png", scale = 1.1, dpi = 350)
   
