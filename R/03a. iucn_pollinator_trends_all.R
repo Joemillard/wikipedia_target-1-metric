@@ -131,7 +131,70 @@ ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
 #############################
 
 
+### random monthly trend
+random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
 
+# adjust the year column
+random_wiki_lpi$date <- as.numeric(rownames(random_wiki_lpi))
+random_wiki_lpi$Year <- (random_wiki_lpi$date - 1970)/12 + 2015
+random_wiki_lpi$Year <- as.character(random_wiki_lpi$Year)
+
+random_index = random_wiki_lpi$LPI_final
+r_lambdas = diff(log10(random_index[1:53]))
+
+# Load lambda file of interest
+lambdas = read.csv("data/bird_N_data_lambda.csv", row.names = 1)
+
+# Function to calculate *adjusted* index from lambdas selected by 'ind'
+create_lpi_adj <- function(lambdas, ind = 1:nrow(lambdas)) {
+  this_lambdas = lambdas[ind, ]
+  
+  mean_ann_lambda = colMeans(this_lambdas[4:ncol(this_lambdas)])
+  adj_lambdas = mean_ann_lambda - r_lambdas
+  
+  trend = cumprod(10^c(0, adj_lambdas))
+  return(trend)
+}
+
+# bootstrap adjusted index
+dbi.boot = boot(lambdas, create_lpi_adj, R = 1000)
+
+# make dataframes and get 95% intervals
+boot_res = data.frame(LPI = dbi.boot$t0)
+boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
+boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
+boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
+
+# plot
+ggplot(boot_res, aes(x=Year, y=LPI, group=1)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=LPI_lwr, ymax=LPI_upr), alpha=0.5)
+
+
+# Function to calculate index from lambdas selected by 'ind'
+create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
+  this_lambdas = lambdas[ind, ]
+  
+  mean_ann_lambda = colMeans(this_lambdas)
+  
+  trend = cumprod(10^c(0, mean_ann_lambda))
+  return(trend)
+}
+# Random adjusted species trends
+adj_lambdas = sweep(this_lambdas[4:ncol(this_lambdas)],2,r_lambdas)
+# Bootstrap these to get confidence intervals
+dbi.boot = boot(adj_lambdas, create_lpi, R = 1000)
+
+# Construct dataframe and get 95% intervals
+boot_res = data.frame(LPI = dbi.boot$t0)
+boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
+boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
+boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
+
+# plot
+ggplot(boot_res, aes(x=Year, y=LPI, group=1)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=LPI_lwr, ymax=LPI_upr), alpha=0.5)
 
 ### confidence interval with bootstrapping
 # function for calculating lpi and adjusting
