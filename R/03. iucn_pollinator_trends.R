@@ -5,7 +5,10 @@ library(rlpi)
 library(ggplot2)
 library(forcats)
 library(rvest)
-library(tm)
+library(boot)
+
+# source the functions R script
+source("R/00. functions.R")
 
 # read in total monthtly views user
 # iucn_views <- read.csv("wikipedia_data/iucn_total_monthly_views_user.csv", stringsAsFactors = FALSE)
@@ -212,17 +215,71 @@ for (i in 1:length(lpi_trends_corr)) {
 
 }
 
+# Load lambda file of interest
+bird_lambdas_N = read.csv("data/bird_N_data_lambda.csv", row.names = 1)
+bird_lambdas_Y = read.csv("data/bird_Y_data_lambda.csv", row.names = 1)
+insect_lambdas_N = read.csv("data/insect_N_data_lambda.csv", row.names = 1)
+insect_lambdas_Y = read.csv("data/insect_Y_data_lambda.csv", row.names = 1)
+mammal_lambdas_N = read.csv("data/mammal_N_data_lambda.csv", row.names = 1)
+mammal_lambdas_Y = read.csv("data/mammal_Y_data_lambda.csv", row.names = 1)
+
+# lambda groupings
+# create list of data and vectors for assigning new column
+lambda_data <- list(bird_lambdas_N, bird_lambdas_Y, insect_lambdas_N, insect_lambdas_Y, mammal_lambdas_N, mammal_lambdas_Y)
+class_group_lambda <- c("bird", "bird", "insect", "insect", "mammal", "mammal")
+pollinat_NY <- c("N", "Y", "N", "Y", "N", "Y")
+
+### script for calculating the confidence interval for each grouping
+
+# Function to calculate index from lambdas selected by 'ind'
+create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
+  this_lambdas = lambdas[ind, ]
+  
+  mean_ann_lambda = colMeans(this_lambdas)
+  
+  trend = cumprod(10^c(0, mean_ann_lambda))
+  return(trend)
+}
+
+run_each_group <- function(data){
+
+  # Random adjusted species trends
+  adj_lambdas = sweep(data[4:ncol(data)],2,r_lambdas)
+  # Bootstrap these to get confidence intervals
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
+
+  # Construct dataframe and get 95% intervals
+  boot_res = data.frame(LPI = dbi.boot$t0)
+  boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
+  boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
+  boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
+  
+  return(boot_res)
+
+}
+
+lpi_trends_adjusted <- lapply(lambda_data, run_each_group)
+
+# add column for class and pollinating
+for(i in 1:length(class_group_lambda)){
+  lpi_trends_adjusted[[i]]$class <- class_group_lambda[i]
+  lpi_trends_adjusted[[i]]$pollinat <- pollinat_NY[i]
+}
+
+lpi_confidence_int <- rbindlist(lpi_trends_adjusted)
+
 ### make plot of trends over time for each grouping, adjusted for random
 lpi_trends_corr %>%
   rbindlist %>% 
+  inner_join(lpi_confidence_int, by = c("Year", "class", "pollinat")) %>%
   filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(pollinat = factor(pollinat, levels = c("Y", "N"), labels = c("Yes", "No"))) %>% 
   mutate(class = factor(class, levels = c("bird", "insect", "mammal"), labels = c("Birds", "Insects", "Mammals"))) %>%
   ggplot() +
   geom_point(aes(x = Year, y = LPI_final.x, colour = pollinat)) + 
+  geom_ribbon(aes(x = Year, fill = pollinat, ymin = LPI_upr, ymax = LPI_lwr), alpha = 0.5) +
   geom_line(aes(x = Year, y = LPI_final.x, colour = pollinat)) +
-  #geom_smooth(aes(x = Year, y = adjusted_lpi, group = groupings, colour = pollinat, fill = pollinat), lm = "loess") +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   facet_wrap(~class, scales = "free_x") +
   scale_colour_manual(name = "Pollinating", values = c("black", "red")) +
