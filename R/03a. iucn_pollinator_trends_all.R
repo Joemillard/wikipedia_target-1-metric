@@ -196,7 +196,7 @@ overall_trends_insects <- lpi_trends_corr %>%
 
 ggsave("pollinating_trends_comp_insects.png", scale = 1, dpi = 350)
 
-## modelling of lambda values in relation to class
+########## modelling of lambda values in relation to class (Modelling of lambda values starts here)
 # read in lambda files
 bird_lambdas <- read.csv("data/birds_data_conf_lambda.csv", stringsAsFactors = FALSE)
 mammal_lambdas <- read.csv("data/mammals_data_conf_lambda.csv", stringsAsFactors = FALSE)
