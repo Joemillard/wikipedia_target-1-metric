@@ -216,22 +216,22 @@ random_wiki_lpi$lamda = c(0, diff(log10(random_wiki_lpi$LPI_final[1:53])))
 random_wiki_lpi$date <- paste("X", random_wiki_lpi$date, sep = "")
 
 # pollinators with redlist id
-bird_iucn_id <- read.csv("data/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
-insect_iucn_id <- read.csv("data/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
-mammal_iucn_id <- read.csv("data/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE) 
+#bird_iucn_id <- read.csv("data/iucn_AVES_monthly_views_user.csv", stringsAsFactors = FALSE)
+#insect_iucn_id <- read.csv("data/iucn_INSECTA_monthly_views_user.csv", stringsAsFactors = FALSE)
+#mammal_iucn_id <- read.csv("data/iucn_MAMMALIA_monthly_views_user.csv", stringsAsFactors = FALSE) 
 
-# combine taxa groupings as list
-pollinating_taxa <- list(bird_iucn_id, insect_iucn_id, mammal_iucn_id)
+# combine taxa groupings as list - not currently used
+#pollinating_taxa <- list(bird_iucn_id, insect_iucn_id, mammal_iucn_id)
 
 # unique the articles, and reformat the article column
-all_taxa_ids <- lapply(pollinating_taxa, select_col) %>% 
-  rbindlist() %>%
-  mutate(article = gsub(" ", "_", article))
+#all_taxa_ids <- lapply(pollinating_taxa, select_col) %>% 
+#  rbindlist() %>%
+#  mutate(article = gsub(" ", "_", article))
 
-# redlist for iucn red list level
-redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
-  mutate(species = gsub(" ", "_", species)) %>%
-  dplyr::select(species, category, scientific_name, taxonid)
+# redlist for iucn red list level - not currently used
+# redlist <- read.csv("data/redlist_data_2019_10_11_15_05_45.csv", stringsAsFactors = FALSE) %>%
+#  mutate(species = gsub(" ", "_", species)) %>%
+#  dplyr::select(species, category, scientific_name, taxonid)
 
 ### set up the final dataframe
 # create list of data and vectors for assigning new column
@@ -260,13 +260,13 @@ all_lambda$SpeciesSSet <- as.character(all_lambda$SpeciesSSet)
 # similarity value in this model
 predict_lambda_all <- lm(av_lambda ~ class, data = all_lambda)
 
-summary(predict_lambda_all)
+#summary(predict_lambda_all)
 
 predict_lambda_step <- step(predict_lambda_all, direction = "both", trace = TRUE)
 
-summary(predict_lambda_step)
-plot(predict_lambda_step)
-anova(predict_lambda_step)
+#summary(predict_lambda_step)
+#plot(predict_lambda_step)
+#anova(predict_lambda_step)
 
 predicted_values <- predict(predict_lambda_step, all_lambda, se.fit = TRUE)
 
