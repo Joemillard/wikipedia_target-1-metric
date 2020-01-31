@@ -126,7 +126,7 @@ select_comp <- function(x){
     ungroup() %>%
     filter(n == 53)
   
-  # subset from insects only those with 43 rows i.e. complete
+  # subset from insects only those with 53 rows i.e. complete
   iucn_insects_filt <- x %>%
     filter(article %in% insect_comp$article)
   return(iucn_insects_filt)
@@ -164,7 +164,7 @@ structure_lpi_overall <- function(iucn_no_dup, poll){
 join_random <- function(data){
   data$Year <- as.character(data$Year)
   data <- inner_join(data, random_wiki_lpi, by = c("Year", "date"))
-  data$adjusted_lpi <- data$LPI_final.x - data$LPI_final.y
+  #data$adjusted_lpi <- data$LPI_final.x - data$LPI_final.y
   return(data)
 }
 

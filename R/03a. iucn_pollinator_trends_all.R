@@ -82,7 +82,7 @@ random_wiki_lpi$date <- as.numeric(rownames(random_wiki_lpi))
 random_wiki_lpi$Year <- (random_wiki_lpi$date - 1970)/12 + 2015
 random_wiki_lpi$Year <- as.character(random_wiki_lpi$Year)
 
-# bind the random values back onto main dataframe and calculate adjusted lpi
+# bind the random values back onto main dataframe
 lpi_trends <- lapply(lpi_trends, join_random)
 
 #### Robin calculating lambdas
@@ -154,7 +154,7 @@ lpi_confidence_int <- rbindlist(lpi_trends_adjusted)
 
 ### make plot of trends over time for each grouping, adjusted for random
 overall_trends <- lpi_trends_corr %>%
-  rbindlist %>% 
+  rbindlist %>%
   filter(LPI_final.x !=  -99) %>%
   inner_join(lpi_confidence_int, by = c("Year", "class")) %>%
   mutate(Year = as.numeric(Year)) %>%
@@ -171,7 +171,7 @@ overall_trends <- lpi_trends_corr %>%
   ggtitle("B") +
   ylab("Random adjusted index")
 
-ggsave("pollinating_trends_comp_all.png", scale = 1.1, dpi = 350)
+ggsave("pollinating_trends_comp_all_2.png", scale = 1.1, dpi = 350)
 
 ###########################
 
