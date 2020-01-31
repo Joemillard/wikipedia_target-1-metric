@@ -122,17 +122,6 @@ fin_frame_5$category <- plyr::revalue(fin_frame_5$category, c("LR/nt" = "NT", "L
 # similarity value in this model
 predict_lambda_1 <- lm(av_lambda ~ class * pollinating, data = fin_frame_5)
 
-# binomial model test
-#fin_frame_6 = fin_frame_5
-#lambdas = fin_frame_6[, 5:56]
-fin_frame_5$inc = fin_frame_5$av_lambda > 0
-fin_frame_5$inc = fin_frame_5$av_lambda <= 0
-
-predict_lambda_glm <- glm(inc ~ class * pollinating.x, data = fin_frame_5, family = "binomial")
-####
-predic_lambda_glm_step <- step(predict_lambda_glm, direction = "both", trace = TRUE)
-summary(predic_lambda_glm_step)
-
 summary(predict_lambda_1)
 plot(predict_lambda_1)
 #summary(predict_lambda_2)
@@ -140,9 +129,6 @@ anova(predict_lambda_1)
 #anova(predict_lambda_2)
 
 predict_lambda_step <- step(predict_lambda_1, direction = "both", trace = TRUE)
-
-#predict_lambda_step_2 <- stepAIC(predict_lambda_2, direction = "both", 
-                               #trace = FALSE)
 
 summary(predict_lambda_step)
 plot(predict_lambda_step)
