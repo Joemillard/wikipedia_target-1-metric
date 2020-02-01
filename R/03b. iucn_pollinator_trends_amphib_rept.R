@@ -79,8 +79,7 @@ run_each_group <- function(data){
   boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
   boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
   boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
-  boot_res$mean
-  
+
   return(boot_res)
   
 }
