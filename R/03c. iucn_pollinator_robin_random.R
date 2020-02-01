@@ -22,6 +22,8 @@ random <- read.csv("data/robin_lambdas/class_wiki_indices/iucn_RANDOM_popdata_us
 
 # create list of data and vectors for assigning new column
 lambda_data_or <- list(amphib, aves, insects, mammals, reptiles, actin)
+lambda_data <- list(amphib, aves, insects, mammals, reptiles, actin)
+
 class_group_lambda <- c("amphibians", "birds", "insects", "mammals", "reptiles", "actinopterygii")
 
 # remove extra columns and incomplete cases
@@ -149,5 +151,3 @@ overall_trends <- unadjusted_indices %>%
   #scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   ylab("Random adjusted index")
-
-
