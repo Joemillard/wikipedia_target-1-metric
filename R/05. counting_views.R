@@ -3,6 +3,15 @@ library(dplyr)
 library(data.table)
 library(forcats)
 
+# read in class level lambdas
+bird <- read.csv("data/birds_data_conf_lambda.csv", stringsAsFactors = FALSE)
+insect <- read.csv("data/insects_data_conf_lambda.csv", stringsAsFactors = FALSE)
+mammal <- read.csv("data/mammals_data_conf_lambda.csv", stringsAsFactors = FALSE)
+
+# taxonomic classes as list
+class_lambdas <- list(bird, insect, mammal)
+
+# count number of days for each user trend
 bird_views <- read.csv("data/bird_user_trends.csv", stringsAsFactors = FALSE)
 mammal_views <- read.csv("data/mammal_user_trends.csv", stringsAsFactors = FALSE)
 insect_views <- read.csv("data/insect_user_trends.csv", stringsAsFactors = FALSE)
@@ -26,6 +35,7 @@ print_complete_series <- function(data){
 }
 
 lapply(lambdas, print_complete_series)
+lapply(class_lambdas, print_complete_series)
 
 r_views <- sum(random_monthly_trends_init$views, na.rm = TRUE)
 b_views <- sum(bird_views$views)
