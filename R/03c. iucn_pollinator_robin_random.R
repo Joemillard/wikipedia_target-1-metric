@@ -63,7 +63,7 @@ run_each_group <- function(data){
   adj_lambdas <- sweep(data[4:ncol(data)], 2, r_lambdas)
   
   # Bootstrap these to get confidence intervals
-  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
   
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
