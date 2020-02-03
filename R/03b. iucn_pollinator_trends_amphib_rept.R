@@ -72,7 +72,7 @@ run_each_group <- function(data){
   adj_lambdas <- sweep(data[4:ncol(data)], 2, r_lambdas)
   
   # Bootstrap these to get confidence intervals
-  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
 
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
@@ -109,7 +109,9 @@ overall_trends <- lpi_confidence_int %>%
   geom_line(aes(x = Year, y = LPI)) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.37) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
-  facet_wrap(~class, scales = "free_x") +
+  facet_wrap(~class) +
+  #ggtitle("B") +
+  xlab(NULL) +
   #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   #scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
@@ -169,15 +171,20 @@ fin_frame_6 <- all_lambda %>%
 lambda_overall <- fin_frame_6 %>%
   mutate(class = factor(class, levels = c("insects", "amphibians", "actinopterygii", "birds", "mammals", "reptiles"), labels = c("Insects", "Amphibians", "Actinopterygii", "Birds", "Mammals", "Reptiles"))) %>%
   ggplot() + 
-  geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se)))) +
+  geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), width = 0.3) +
   geom_point(aes(x = class, y = predicted_values)) +
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
   #facet_grid(~class) +
   ylab("Random adjusted average lambda") +
-  xlab("Class") +
+  xlab(NULL) +
+  #ggtitle("A") +
   #scale_y_continuous(breaks = c(-0.001, -0.0005, 0, 0.0005), labels = c("-0.001", "-0.0005", "0", "0.0005")) +
   #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   theme(legend.position = "none")
 
 ggsave("average_lambda_6_classes.png", dpi = 350, scale = 1)
+
+lambda_overall + overall_trends + plot_layout(ncol = 1)
+
+ggsave("multiplot_lambda_rate.png", scale = 1, dpi = 400)
