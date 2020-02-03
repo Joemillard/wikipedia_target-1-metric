@@ -2,6 +2,7 @@
 library(dplyr)
 library(data.table)
 library(forcats)
+library(ggplot2)
 
 # read in class level lambdas
 bird <- read.csv("data/birds_data_conf_lambda.csv", stringsAsFactors = FALSE)
@@ -50,3 +51,23 @@ insect_spec <- length(unique(insect_views$article))
 rand_spec <- length(unique(random_monthly_trends_init$article))
 
 bird_spec + mammal_spec + insect_spec + rand_spec
+
+## plot for number of pollinating species
+pollinators <- data.frame("class" = rep(c("Birds", "Insects", "Mammals"), 2), 
+                          "pollinating" = c(rep(c("Y"), 3), rep(c("N"), 3)),
+                          "count" = c(1289, 497, 655, 7147, 1202, 3828))
+
+# [;pt gpt ]
+pollinators %>%
+  mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
+  ggplot() +
+    geom_bar(aes(x = NA, fill = pollinating, y = count), stat = "identity") +
+    facet_wrap(~class) +
+    scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
+    ylab("Total species") +
+    xlab("") +
+    theme_bw() +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 8900)) +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+ggsave("pollinator_plot.png", scale = 1, dpi = 350)
