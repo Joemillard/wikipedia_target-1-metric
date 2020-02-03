@@ -57,7 +57,7 @@ pollinators <- data.frame("class" = rep(c("Birds", "Insects", "Mammals"), 2),
                           "pollinating" = c(rep(c("Y"), 3), rep(c("N"), 3)),
                           "count" = c(1289, 497, 655, 7147, 1202, 3828))
 
-# [;pt gpt ]
+# plot for pollinators with wiki data and complete time series
 pollinators %>%
   mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
   ggplot() +
