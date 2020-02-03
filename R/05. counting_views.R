@@ -10,63 +10,22 @@ random_monthly_trends_init <- read.csv("data/random_user_trends.csv", stringsAsF
 
 length(unique(bird_views$timestamp))
 
-# read in pollinator data and count orders have pollinators and subset out those without pollinators
-iucn_pollinators <- readRDS("IUCN_pollinators.rds")
+# read in pollinator data from lambdas
+bird_N <- read.csv("data/bird_N_data_lambda.csv", stringsAsFactors = FALSE)
+bird_Y <- read.csv("data/bird_Y_data_lambda.csv", stringsAsFactors = FALSE)
+mammal_N <- read.csv("data/mammal_N_data_lambda.csv", stringsAsFactors = FALSE)
+mammal_Y <- read.csv("data/mammal_Y_data_lambda.csv", stringsAsFactors = FALSE)
+insect_N <- read.csv("data/insect_N_data_lambda.csv", stringsAsFactors = FALSE)
+insect_Y <- read.csv("data/insect_Y_data_lambda.csv", stringsAsFactors = FALSE)
 
-# subset out duplicated pollinators - identify all those with a Y, make unique, then subset these from the N
-subset_dup <- function(x) {
-  x_2 <- x %>%
-    filter(pollinating == "Y") %>%
-    select(article) %>%
-    unique()
-  
-  x_3 <- x %>%
-    filter(pollinating == "N", !article %in% x_2$article) %>%
-    select(-name) %>%
-    group_by(article) %>%
-    unique() %>%
-    ungroup()
-  
-  x_4 <- x %>%
-    filter(pollinating == "Y") %>%
-    select(-name)
-  
-  x_5 <- rbind(x_3, x_4)
-  
-  return(x_5)
+lambdas <- list(bird_N, bird_Y, mammal_N, mammal_Y, insect_N, insect_Y)
+
+print_complete_series <- function(data){
+  data <- data[complete.cases(data),]
+  print(nrow(data))
 }
 
-iucn_pollinators <- lapply(iucn_pollinators, subset_dup)
-
-# filter out any taxonomic orders without any yesses
-filter_pollinator <- function(pollinators){
-  pollinators <- pollinators %>%
-    filter(pollinating == "Y")
-  
-  return(pollinators)
-}
-
-# pollinators in 4 (birds - 1301), 6 (insects - 551), 7 (mammals - 665), and 8 (reptiles - 96)
-pollinating_orders <- lapply(iucn_pollinators, filter_pollinator)
-iucn_pollinators <- iucn_pollinators[c(4, 6, 7)]
-
-# plot of order level distribution of pollinators - to work on 18/11/19 (RERUN FOR complete timeseries subset)
-order_pollinators <- rbindlist(iucn_pollinators) %>%
-  droplevels() %>%
-  mutate(pollinating = factor(pollinating, levels = c("N", "Y"))) %>%
-  group_by(class_name, order_name) %>%  
-  tally() %>% 
-  ungroup() %>%
-  arrange(desc(n)) %>%
-  mutate(order_name = fct_reorder(order_name, -n)) %>%
-  mutate(sorted = 1:78)
-
-order_pollinator_counts <- rbindlist(iucn_pollinators) %>%
-  droplevels() %>%
-  mutate(pollinating = factor(pollinating, levels = c("N", "Y"))) %>%
-  group_by(class_name, pollinating) %>%  
-  tally() %>% 
-  ungroup()
+lapply(lambdas, print_complete_series)
 
 r_views <- sum(random_monthly_trends_init$views, na.rm = TRUE)
 b_views <- sum(bird_views$views)
