@@ -101,7 +101,7 @@ lpi_confidence_int <- lpi_confidence_int %>%
   
 ### make plot of trends over time for each grouping, adjusted for random
 overall_trends <- lpi_confidence_int %>%
-  mutate(class = factor(class, levels = c("actinopterygii", "amphibians", "birds", "insects", "mammals", "reptiles"), labels = c("Actinopterygii", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  mutate(class = factor(class, levels = c("amphibians", "birds", "insects", "mammals", "actinopterygii", "reptiles"), labels = c("Amphibians", "Birds", "Insects", "Mammals", "Ray-finned fishes", "Reptiles"))) %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
   geom_line(aes(x = Year, y = LPI)) +
@@ -164,7 +164,7 @@ fin_frame_6 <- all_lambda %>%
   unique()
 
 lambda_overall <- fin_frame_6 %>%
-  mutate(class = factor(class, levels = c("insects", "amphibians", "actinopterygii", "birds", "mammals", "reptiles"), labels = c("Insects", "Amphibians", "Actinopterygii", "Birds", "Mammals", "Reptiles"))) %>%
+  mutate(class = factor(class, levels = c("insects", "amphibians", "actinopterygii", "birds", "mammals", "reptiles"), labels = c("Insects", "Amphibians", "Ray-finned fishes", "Birds", "Mammals", "Reptiles"))) %>%
   ggplot() + 
   geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), width = 0.3) +
   geom_point(aes(x = class, y = predicted_values)) +
@@ -178,4 +178,4 @@ ggsave("average_lambda_6_classes.png", dpi = 350, scale = 1)
 
 lambda_overall + overall_trends + plot_layout(ncol = 1)
 
-ggsave("multiplot_lambda_rate.png", scale = 1, dpi = 400)
+ggsave("multiplot_lambda_rate_2.png", scale = 1, dpi = 400)
