@@ -67,7 +67,6 @@ run_each_group <- function(data){
   
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
-  #boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
   boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
   boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
 
@@ -93,16 +92,12 @@ lpi_confidence_int <- lpi_confidence_int %>%
 ### make plot of trends over time for each grouping, adjusted for random
 overall_trends_adj <- lpi_confidence_int %>%
   mutate(class = factor(class, levels = c("actinopterygii", "amphibians", "birds", "insects", "mammals", "reptiles"), labels = c("Actinopterygii", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
-  #filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
-  #geom_point(aes(x = Year, y = LPI)) + 
   geom_line(aes(x = Year, y = LPI)) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.37) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   facet_wrap(~class, scales = "free_x") +
-  #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
-  #scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   ylab("Random adjusted index")
 
@@ -139,15 +134,10 @@ unadjusted_indices <- rbindlist(unadjusted_indices)
 ### make plot of trends over time for each grouping, adjusted for random
 overall_trends <- unadjusted_indices %>%
   mutate(class = factor(class, levels = c("actinopterygii", "amphibians", "birds", "insects", "mammals", "reptiles"), labels = c("Actinopterygii", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
-  #filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(year)) %>%
   ggplot() +
-  #geom_point(aes(x = Year, y = LPI)) + 
   geom_line(aes(x = year, y = trend)) +
-  #geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.37) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   facet_wrap(~class, scales = "free_x") +
-  #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
-  #scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   ylab("Random adjusted index")
