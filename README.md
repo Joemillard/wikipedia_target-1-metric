@@ -1,4 +1,4 @@
-# 
+# The Digital Biodiversity Index (DBI)
 
 This repository contains all the scripts used for the text analysis carried out in the below paper:
 

@@ -1,5 +1,5 @@
-## adjust with robin's lambda
-## script for constructing trends on ecological system
+## adjust class trends with robin's lambda
+## script for constructing trends on class
 library(dplyr)
 library(data.table)
 library(rlpi)

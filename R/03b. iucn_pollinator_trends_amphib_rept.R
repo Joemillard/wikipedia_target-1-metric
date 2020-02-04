@@ -22,7 +22,7 @@ actin <- read.csv("data/robin_lambdas/class_wiki_indices/iucn_ACTINOPTERYGII_pop
 # create list of data and vectors for assigning new column
 lambda_data <- list(amphib, aves, insects, mammals, reptiles, actin)
 
-# remove extra columns anc omplete cases
+# remove extra columns and incomplete cases
 remove_cols <- function(data) {
   data_new <- data %>%
     select(-X1971, -X1972, -X1973, -X1974, -X1975, -X1976, -X1977) %>%
