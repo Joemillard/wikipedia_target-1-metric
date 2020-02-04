@@ -37,40 +37,6 @@ iucn_pollinators <- lapply(iucn_pollinators, subset_dup)
 pollinating_orders <- lapply(iucn_pollinators, filter_pollinator)
 iucn_pollinators <- iucn_pollinators[c(4, 6, 7)]
 
-# plot of order level distribution of pollinators - to work on 18/11/19 (RERUN FOR complete timeseries subset)
-order_pollinators <- rbindlist(iucn_pollinators) %>%
-  droplevels() %>%
-  mutate(pollinating = factor(pollinating, levels = c("N", "Y"))) %>%
-  group_by(class_name, order_name) %>%  
-  tally() %>% 
-  ungroup() %>%
-  arrange(desc(n)) %>%
-  mutate(order_name = fct_reorder(order_name, -n)) %>%
-  mutate(sorted = 1:78)
-
-order_pollinator_counts <- rbindlist(iucn_pollinators) %>%
-  droplevels() %>%
-  mutate(pollinating = factor(pollinating, levels = c("N", "Y"))) %>%
-  group_by(class_name, order_name, pollinating) %>%  
-  tally() %>% 
-  ungroup()
-  
-pollinator_plot <- inner_join(order_pollinator_counts, order_pollinators, by = c("class_name", "order_name")) %>%
-  mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
-  mutate(class_name = factor(class_name, levels = c("AVES", "INSECTA", "MAMMALIA"), labels = c("Birds", "Insects", "Mammals"))) %>%
-  ggplot() +
-  geom_bar(aes(x = NA, fill = pollinating, y = n.x), stat = "identity") +
-  theme(axis.text = element_text(angle = 90)) +
-  facet_wrap(~class_name) +
-  ylab("Total species") +
-  xlab("") +
-  scale_fill_manual(name = "Pollinating", values = c("black", "red")) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 8900)) +
-  theme_bw() +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
-
-ggsave("pollinating_iucn-species_wiki.png", dpi = 350, scale = 1.1)
-
 # join the pollinator data onto the view data, for each of 6 subsets (birds, Y/N; insects, Y/N; mammals, Y/N)
 iucn_views_poll <- list()
 for(i in 1:length(iucn_pollinators)){
