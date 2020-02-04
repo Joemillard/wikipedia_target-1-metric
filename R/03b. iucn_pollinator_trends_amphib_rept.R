@@ -102,18 +102,13 @@ lpi_confidence_int <- lpi_confidence_int %>%
 ### make plot of trends over time for each grouping, adjusted for random
 overall_trends <- lpi_confidence_int %>%
   mutate(class = factor(class, levels = c("actinopterygii", "amphibians", "birds", "insects", "mammals", "reptiles"), labels = c("Actinopterygii", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
-  #filter(LPI_final.x !=  -99) %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
-  #geom_point(aes(x = Year, y = LPI)) + 
   geom_line(aes(x = Year, y = LPI)) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.37) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1, colour = "grey") +
   facet_wrap(~class) +
-  #ggtitle("B") +
   xlab(NULL) +
-  #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
-  #scale_fill_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   ylab("Random adjusted index")
 
@@ -174,12 +169,8 @@ lambda_overall <- fin_frame_6 %>%
   geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), width = 0.3) +
   geom_point(aes(x = class, y = predicted_values)) +
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
-  #facet_grid(~class) +
   ylab("Random adjusted average lambda") +
   xlab(NULL) +
-  #ggtitle("A") +
-  #scale_y_continuous(breaks = c(-0.001, -0.0005, 0, 0.0005), labels = c("-0.001", "-0.0005", "0", "0.0005")) +
-  #scale_colour_manual(name = "Taxonomic class", values = c("#009E73", "#CC79A7", "#999999")) +
   theme_bw() +
   theme(legend.position = "none")
 
