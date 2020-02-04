@@ -18,3 +18,12 @@ The required script are as follows:
 ```R/03b. iucn_pollinator_trends_amphib_rept.R```<br>
 ```R/04. models_lambda.R```<br>
 ```R/05. counting_views.R```<br>
+
+# See below for script information
+```R/00. functions.R```- distinct functions used as part of the analysis, sourced into R scripts for analysis where appropriate
+
+```R/01. download_pollinator_views.py``` - downloads page views for a set of IUCN Wikipedia pages that contain pollinators
+
+
+
+
