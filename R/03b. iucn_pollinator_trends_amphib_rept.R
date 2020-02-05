@@ -169,7 +169,7 @@ lambda_overall <- fin_frame_6 %>%
   geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), width = 0.3) +
   geom_point(aes(x = class, y = predicted_values)) +
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
-  ylab("SAI average lambda") +
+  ylab("SAI average monthly lambda") +
   xlab(NULL) +
   theme_bw() +
   theme(legend.position = "none")
@@ -178,4 +178,4 @@ ggsave("average_lambda_6_classes.png", dpi = 350, scale = 1)
 
 lambda_overall + overall_trends + plot_layout(ncol = 1)
 
-ggsave("multiplot_lambda_rate_2.png", scale = 1, dpi = 400)
+ggsave("multiplot_lambda_rate_3.png", scale = 1, dpi = 400)
