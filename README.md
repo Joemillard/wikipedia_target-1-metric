@@ -1,8 +1,8 @@
 # The Species Awareness Index (SAI)
 
-This repository contains all the scripts used for the text analysis carried out in the below paper:
+This repository contains all the scripts used for the analysis carried out in the below paper:
 
-> **Millard _et al_., The Species Awareness Index (SAI): a Wikipedia-derived conservation culturomics metric for public biodiversity awareness and Aichi Target 1.**
+> **Millard _et al_., The Species Awareness Index (SAI): a Wikipedia-derived conservation culturomics metric for public biodiversity awareness.**
 
 There are 7 R scripts and 1 python script in this analysis, run sequentially from 01-05. All key data written to csv are also hosted here (with the exception of the raw view data which will be hosted elsewhere), as well as any additional csvs read in throughout the analysis. Most scripts read in script "00. functions.R", which calls in additional functions required throughout the analysis.
 
