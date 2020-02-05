@@ -110,7 +110,7 @@ overall_trends <- lpi_confidence_int %>%
   facet_wrap(~class) +
   xlab(NULL) +
   theme_bw() +
-  ylab("Random adjusted index")
+  ylab("SAI")
 
 ggsave("all_taxa_log_conversion.png", scale = 1, dpi = 350)
 
@@ -169,7 +169,7 @@ lambda_overall <- fin_frame_6 %>%
   geom_errorbar(aes(x = class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), width = 0.3) +
   geom_point(aes(x = class, y = predicted_values)) +
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
-  ylab("Random adjusted average lambda") +
+  ylab("SAI average lambda") +
   xlab(NULL) +
   theme_bw() +
   theme(legend.position = "none")
