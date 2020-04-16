@@ -10,15 +10,16 @@ from pandas.io.json import json_normalize
 # Get session for url query
 S = requests.Session()
 
-insect_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_data/view_data_by_class_totals_useronly/iucn_INSECTA_monthly_views_user.csv')
-mammal_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_data/view_data_by_class_totals_useronly/iucn_MAMMALIA_monthly_views_user.csv')
-bird_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_data/view_data_by_class_totals_useronly/iucn_AVES_monthly_views_user.csv')
-random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_v3_LPI/overall_views/random_monthly_trends.csv')
+# read in the list of pages
+pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv')
 
-no_pages = 5000
+# languages for views
+languages = ['en', 'fr', 'de', 'es']
+
+# set parameters for random pages and sleep
+no_pages = 10
 sleep_period = 0.1
 
-# define function for subsetting the random dataframe
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
     pages = pd.DataFrame(view_pages)
@@ -32,51 +33,71 @@ def build_rand(view_pages, no_pages):
 
 def build_taxa(data, no_pages):
     data = pd.DataFrame(data)
-    taxa = data[['article']]
-    taxa = taxa.drop_duplicates(subset = "article")
+    taxa = data[['title']]
+    taxa = taxa.drop_duplicates(subset = "title")
+    taxa = taxa.head(no_pages)
     taxa.index = range(len(taxa.index))
     return(taxa)
 
-insect_pages = build_taxa(insect_pages, no_pages)
-mammal_pages = build_taxa(mammal_pages, no_pages)
-bird_pages = build_taxa(bird_pages, no_pages)
-random_pages = build_rand(random_pages, no_pages)
+# split the pages up into the top 10 languages
+for l in range(0, len(languages)):
 
-taxa = [random_pages, insect_pages, mammal_pages, bird_pages]
-taxa_strings = ["random", "insect", "mammal", "bird"]
+    # filter for each language
+    language_pages = pages[pages.site == (languages[l] + 'wiki')]
 
-# iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
-for j in range(0, len(taxa)):
-    result = []
-    # write just headers to file
-    for i in range(0, len(taxa[j]['article'])):
-        try:
-            # assign title at iteration to object, replace spaces, and retrieve views for URL
-            title = taxa[j]['article'][i]
-            title = title.replace(" ", "_")
-            URL = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia.org/all-access/user/%s/daily/20150701/20191130" % title
-            R = S.get(url = URL)
+    # split the pages up into each class of interest
+    actinopterygii = language_pages[language_pages.class_name == 'ACTINOPTERYGII']
+    amphibia = language_pages[language_pages.class_name =='AMPHIBIA']
+    aves = language_pages[language_pages.class_name == 'AVES']
+    insecta = language_pages[language_pages.class_name == 'INSECTA']
+    mammalia = language_pages[language_pages.class_name == 'MAMMALIA']
+    reptilia = language_pages[language_pages.class_name == 'REPTILIA']
 
-            # clean up json file, append column for taxa object, and append to results[]
-            DATA = R.json()
-            DATA = DATA['items']
-            DATA = json_normalize(DATA)
-            result.append(DATA)
-            # write data to file 
-            time.sleep(sleep_period)
-            print(i, j)
+    # filter for just the article paegs to search for views
+    actinopterygii_pages = build_taxa(actinopterygii, no_pages)
+    amphibia_pages = build_taxa(amphibia, no_pages)
+    aves_pages = build_taxa(aves, no_pages)
+    insecta_pages = build_taxa(insecta, no_pages)
+    mammalia_pages = build_taxa(mammalia, no_pages)
+    reptilia_pages = build_taxa(reptilia, no_pages)
+    #random_pages = build_rand(random_pages, no_pages)
 
-        # in event of error, insert row with article title
-        except KeyError:
+    # create list of each taxa object, with string corresponding at each index
+    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages]
+    taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"]
+
+    # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
+    for j in range(0, len(taxa)):
+        result = []
+        # write just headers to file
+        for i in range(0, len(taxa[j]['title'])):
+            try:
+                # assign title at iteration to object, replace spaces, and retrieve views for URL
+                title = taxa[j]['title'][i]
+                title = title.replace(" ", "_")
+                URL = "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/%s.wikipedia.org/all-access/user/%s/daily/20150701/20200331" % (languages[l], title)
+                R = S.get(url = URL)
+
+                # clean up json file, append column for taxa object, and append to results[]
+                DATA = R.json()
+                DATA = DATA['items']
+                DATA = json_normalize(DATA)
+                result.append(DATA)
+                # write data to file 
+                time.sleep(sleep_period)
+                print(i, j)
+
+            # in event of error, insert row with article title
+            except KeyError:
             
-            df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'article':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['NA']})
-            result.append(df)
-            # write error row to file and don't append
-            print(i, j, "ERROR")
+                df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'title':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['NA']})
+                result.append(df)
+                # write error row to file and don't append
+                print(i, j, "ERROR")
 
-    # concatenate all appended results to dataframe and write to csv for each subset
-    final = pd.concat(result)
-    taxa_level = taxa_strings[j]
-    save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_data/view_data_by_class_totals_useronly/%s_user_trends.csv' % taxa_level
-    final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
+        # concatenate all appended results to dataframe and write to csv for each subset
+        final = pd.concat(result)
+        taxa_level = taxa_strings[j]
+        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_'))
+        final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
     
