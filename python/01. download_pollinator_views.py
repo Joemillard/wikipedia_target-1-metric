@@ -21,17 +21,17 @@ random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - q
 languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # set parameters for random pages and sleep
-no_pages = 1
+no_pages = 2
 sleep_period = 0.1
 
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
     pages = pd.DataFrame(view_pages)
-    #pages.columns = ['language', 'wiki_id', 'wiki_title']
+    # pages.columns = ['language', 'wiki_id', 'wiki_title']
     # pages['taxa'] = 'Random'
     pages = pages[['wiki_title', 'wiki_id']]
     pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'})
-    pages = pages.head(no_pages) #  add to subset for smaller sample
+    # pages = pages.head(no_pages) #  add to subset for smaller sample
     pages.index = range(len(pages.index))
     return(pages)
 
@@ -39,12 +39,15 @@ def build_taxa(data, no_pages):
     data = pd.DataFrame(data)
     taxa = data[['title', 'q_wikidata']]
     taxa = taxa.drop_duplicates(subset = "q_wikidata")
-    taxa = taxa.head(no_pages) # add to subset pages for smaller sample
+    # taxa = taxa.head(no_pages) # add to subset pages for smaller sample
     taxa.index = range(len(taxa.index))
     return(taxa)
 
 # split the pages up into the top 10 languages
 for l in range(0, len(languages)):
+
+    # print the current language
+    print(languages[l])
 
     # filter for each language
     language_pages = pages[pages.site == (languages[l] + 'wiki')]
@@ -73,6 +76,9 @@ for l in range(0, len(languages)):
 
     # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
     for j in range(0, len(taxa)):
+
+        # print the current taxonomic order
+        print(taxa_strings[j])
         result = []
         # write just headers to file
         for i in range(0, len(taxa[j]['title'])):
@@ -90,7 +96,6 @@ for l in range(0, len(languages)):
                 DATA['q_wikidata'] = taxa[j]['q_wikidata'][i]
                 result.append(DATA)
                 time.sleep(sleep_period)
-                print(i, j)
 
             # in event of error, insert row with article title
             except KeyError:
