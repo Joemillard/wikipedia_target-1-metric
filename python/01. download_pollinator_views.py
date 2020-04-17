@@ -13,8 +13,11 @@ S = requests.Session()
 # read in the list of pages
 pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv')
 
+# read in the random pages
+random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv')
+
 # languages for views
-languages = ['en', 'fr', 'de', 'es']
+languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # set parameters for random pages and sleep
 no_pages = 10
@@ -23,19 +26,19 @@ sleep_period = 0.1
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
     pages = pd.DataFrame(view_pages)
-    pages.columns = ['article', 'year', 'month', 'views']
-    pages['taxa'] = 'Random'
-    pages = pages[['article']]
-    pages = pages.drop_duplicates(subset = "article")
-    pages = pages.head(no_pages)
+    #pages.columns = ['language', 'wiki_id', 'wiki_title']
+    # pages['taxa'] = 'Random'
+    pages = pages[['wiki_title', 'wiki_id']]
+    pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'}))
+    pages = pages.head(no_pages) #  add to subset for smaller sample
     pages.index = range(len(pages.index))
     return(pages)
 
 def build_taxa(data, no_pages):
     data = pd.DataFrame(data)
-    taxa = data[['title']]
-    taxa = taxa.drop_duplicates(subset = "title")
-    taxa = taxa.head(no_pages)
+    taxa = data[['title', 'q_wikidata']]
+    taxa = taxa.drop_duplicates(subset = "q_wikidata")
+    taxa = taxa.head(no_pages) # add to subset pages for smaller sample
     taxa.index = range(len(taxa.index))
     return(taxa)
 
@@ -44,6 +47,7 @@ for l in range(0, len(languages)):
 
     # filter for each language
     language_pages = pages[pages.site == (languages[l] + 'wiki')]
+    language_random = random_pages[random_pages.language == languages[l]]
 
     # split the pages up into each class of interest
     actinopterygii = language_pages[language_pages.class_name == 'ACTINOPTERYGII']
@@ -60,11 +64,11 @@ for l in range(0, len(languages)):
     insecta_pages = build_taxa(insecta, no_pages)
     mammalia_pages = build_taxa(mammalia, no_pages)
     reptilia_pages = build_taxa(reptilia, no_pages)
-    #random_pages = build_rand(random_pages, no_pages)
+    language_random = build_rand(language_random, no_pages)
 
     # create list of each taxa object, with string corresponding at each index
-    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages]
-    taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"]
+    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, random_pages]
+    taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
 
     # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
     for j in range(0, len(taxa)):
@@ -82,15 +86,15 @@ for l in range(0, len(languages)):
                 DATA = R.json()
                 DATA = DATA['items']
                 DATA = json_normalize(DATA)
+                DATA['q_wikidata'] = taxa[j]['q_wikidata'][i]
                 result.append(DATA)
-                # write data to file 
                 time.sleep(sleep_period)
                 print(i, j)
 
             # in event of error, insert row with article title
             except KeyError:
             
-                df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'title':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['NA']})
+                df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'title':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['NA'], 'q_wikidata':[taxa[j]['q_wikidata'][i]]})
                 result.append(df)
                 # write error row to file and don't append
                 print(i, j, "ERROR")
