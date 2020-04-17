@@ -17,7 +17,7 @@ sleep_period = 0.1
 S = requests.Session()
 
 # languages to get views for
-languages = ['en', 'fr', 'de', 'es']
+languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # loop through each of the languages
 for l in range(0, len(languages)):
@@ -30,24 +30,28 @@ for l in range(0, len(languages)):
         "action":"query",
         "format":"json",
         "list": "random",
-        "rnlimit": "2",
+        "rnlimit": "500",
         "rnnamespace": "0"
     }
 
-    # Get wiki article titles
-    R = S.get(url=URL, params=PARAMS)
-    DATA = R.json()
+    for i in range(0, 12):
+        # Get wiki article titles
+        R = S.get(url=URL, params=PARAMS)
+        DATA = R.json()
 
-    # Convert json data from wikipedia into tuples and insert into DB
-    for data in DATA["query"]["random"]:
-        wiki_id = data["id"]
-        wiki_ns = data["ns"]
-        wiki_title = data["title"]
-        dat = pd.DataFrame({'wiki_id':[wiki_id], 'wiki_ns':[wiki_ns], 'wiki_title':[wiki_title], 'language':[languages[l]]})
-        result.append(dat)
+        # Convert json data from wikipedia into tuples and insert into DB
+        for data in DATA["query"]["random"]:
+            wiki_id = data["id"]
+            wiki_ns = data["ns"]
+            wiki_title = data["title"]
+            dat = pd.DataFrame({'wiki_id':[wiki_id], 'wiki_ns':[wiki_ns], 'wiki_title':[wiki_title], 'language':[languages[l]]})
+            result.append(dat)
 
-        # Sleep so that we're not hammering wikipedia
-        time.sleep(sleep_period)
+            # Sleep so that we're not hammering wikipedia
+            time.sleep(sleep_period)
+
+    # print the language just completed
+    print(languages[l])
 
 final = pd.concat(result)
 save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv'
