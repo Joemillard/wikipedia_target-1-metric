@@ -79,9 +79,16 @@ for l in range(0, len(languages)):
 
         # print the current taxonomic order
         print(taxa_strings[j])
+
+        # write to result object
         result = []
-        # write just headers to file
+
+        # for each title, grab views from API
         for i in range(0, len(taxa[j]['title'])):
+
+            # add counter for multiples of 100
+            if i % 100 == 0:
+                print(i)
             try:
                 # assign title at iteration to object, replace spaces, and retrieve views for URL
                 title = taxa[j]['title'][i]
