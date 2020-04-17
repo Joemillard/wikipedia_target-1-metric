@@ -20,7 +20,7 @@ random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifyin
 languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # set parameters for random pages and sleep
-no_pages = 10
+no_pages = 2
 sleep_period = 0.1
 
 # define function for subsetting the random dataframe
@@ -29,7 +29,7 @@ def build_rand(view_pages, no_pages):
     #pages.columns = ['language', 'wiki_id', 'wiki_title']
     # pages['taxa'] = 'Random'
     pages = pages[['wiki_title', 'wiki_id']]
-    pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'}))
+    pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'})
     pages = pages.head(no_pages) #  add to subset for smaller sample
     pages.index = range(len(pages.index))
     return(pages)
@@ -67,7 +67,7 @@ for l in range(0, len(languages)):
     language_random = build_rand(language_random, no_pages)
 
     # create list of each taxa object, with string corresponding at each index
-    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, random_pages]
+    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, language_random]
     taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
 
     # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
@@ -102,6 +102,6 @@ for l in range(0, len(languages)):
         # concatenate all appended results to dataframe and write to csv for each subset
         final = pd.concat(result)
         taxa_level = taxa_strings[j]
-        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_'))
+        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_'))
         final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
     
