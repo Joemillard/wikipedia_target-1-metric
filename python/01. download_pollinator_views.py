@@ -18,11 +18,12 @@ pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantify
 random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # CBER PC
 
 # languages for views
-languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
+# languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
+languages = ['de', 'es', 'ru', 'pt', 'it', 'ar', 'ja'] # after time out on 12:00 18th April
 
 # set parameters for random pages and sleep
 no_pages = 2
-sleep_period = 0.1
+sleep_period = 1
 
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
