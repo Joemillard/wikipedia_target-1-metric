@@ -10,20 +10,21 @@ from pandas.io.json import json_normalize
 S = requests.Session()
 
 # read in the list of pages
-# pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
-pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # CBER PC
+pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
+# pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # CBER PC
 
 # read in the random pages
-# random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # home PC
-random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # CBER PC
+random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # home PC
+# random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # CBER PC
 
 # languages for views
 # languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
-languages = ['de', 'es', 'ru', 'pt', 'it', 'ar', 'ja'] # after time out on 12:00 18th April
+languages = ['ru', 'pt', 'it', 'ar', 'ja'] # after time out on 09:00 19th April
+# languages = ['ja', 'ar', 'it', 'pt', 'ru'] # to run from CBER PC
 
 # set parameters for random pages and sleep
 no_pages = 2
-sleep_period = 1
+sleep_period = 1.5
 
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
@@ -116,7 +117,7 @@ for l in range(0, len(languages)):
         # concatenate all appended results to dataframe and write to csv for each subset
         final = pd.concat(result)
         taxa_level = taxa_strings[j]
-        # save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
-        save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
+        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
+        # save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
         final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
     
