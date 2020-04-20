@@ -19,8 +19,8 @@ random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifyin
 
 # languages for views
 # languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
-languages = ['ru', 'pt', 'it', 'ar', 'ja'] # after time out on 09:00 19th April
-# languages = ['ja', 'ar', 'it', 'pt', 'ru'] # to run from CBER PC
+languages = ['pt', 'it', 'ar'] # after time out on 20th 09:00
+# languages = ['ar', 'it', 'pt'] # to run from CBER PC
 
 # set parameters for random pages and sleep
 no_pages = 2
