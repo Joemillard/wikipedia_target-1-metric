@@ -18,9 +18,7 @@ pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantify
 random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # CBER PC
 
 # languages for views
-# languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
-# languages = ['pt', 'it', 'ar'] # after time out on 20th 09:00
-languages = ['it'] # to run from CBER PC
+languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # set parameters for random pages and sleep
 no_pages = 2
@@ -73,10 +71,8 @@ for l in range(0, len(languages)):
     language_random = build_rand(language_random, no_pages)
 
     # create list of each taxa object, with string corresponding at each index
-    # taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, language_random]
-    # taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
-    taxa = [language_random] # to run for final random italy file
-    taxa_strings = ["random"] # to run for final random italy file
+    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, language_random]
+    taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
 
     # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
     for j in range(0, len(taxa)):
