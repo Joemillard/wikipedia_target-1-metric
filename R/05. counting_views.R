@@ -8,7 +8,9 @@ library(parallel)
 # read in additional functions
 source("R/00. functions.R")
 
+# set up vector for languages
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
+directory <- "J:/submission_2/user_trends/"
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -32,13 +34,15 @@ view_directories <- function(languages, directory, view_files){
 
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(languages,
-                 directory = "Z:/submission_2/user_trends/")
+                 directory)
                  
 # read in all the files in groups for each language
 language_views <- list()
 system.time(for(i in 1:length(user_files)){
-  language_views[[i]] <- mclapply(user_files[[i]], fread, nrows = 10000, encoding = "UTF-8")
+  language_views[[i]] <- lapply(user_files[[i]], fread, nrows = 500000, encoding = "UTF-8")
 })
+
+# add script to calculate total monthly views and write to rds
 
 # remove extra error columns from chinese dataframe
 language_views[[10]][[1]] <- language_views[[10]][[1]] %>%
