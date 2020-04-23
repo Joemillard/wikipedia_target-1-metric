@@ -3,6 +3,7 @@ library(dplyr)
 library(data.table)
 library(forcats)
 library(ggplot2)
+library(parallel)
 
 # read in additional functions
 source("R/00. functions.R")
@@ -29,15 +30,15 @@ view_directories <- function(languages, directory, view_files){
   return(user_files)
 }
 
-# run the funcion with 10 languages, specifying the directory
+# run the function with 10 languages, specifying the directory
 user_files <- view_directories(languages,
                  directory = "Z:/submission_2/user_trends/")
                  
 # read in all the files in groups for each language
 language_views <- list()
-for(i in 1:length(user_files)){
-  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8")
-}
+system.time(for(i in 1:length(user_files)){
+  language_views[[i]] <- mclapply(user_files[[i]], fread, nrows = 10000, encoding = "UTF-8")
+})
 
 # remove extra error columns from chinese dataframe
 language_views[[10]][[1]] <- language_views[[10]][[1]] %>%
