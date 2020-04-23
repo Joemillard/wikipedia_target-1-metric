@@ -10,6 +10,8 @@ source("R/00. functions.R")
 
 # set up vector for languages
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
+# languages <- c("^zh_")
+
 directory <- "J:/submission_2/user_trends/"
 
 # read in the view data for all taxonomic classes
@@ -36,38 +38,39 @@ view_directories <- function(languages, directory, view_files){
 user_files <- view_directories(languages,
                  directory)
                  
-# read in all the files in groups for each language
+# read in all the files in groups for each language, with parallel processing
 language_views <- list()
 system.time(for(i in 1:length(user_files)){
-  language_views[[i]] <- lapply(user_files[[i]], fread, nrows = 500000, encoding = "UTF-8")
+  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8")
 })
 
 # add script to calculate total monthly views and write to rds
 
-# remove extra error columns from chinese dataframe
-language_views[[10]][[1]] <- language_views[[10]][[1]] %>%
-  select(-title, -V2)
+# remove extra error columns from chinese dataframe - extra dataframe to avoid overwrite
+language_views_edit <- language_views
+language_views_edit[[9]][[1]] <- language_views_edit[[9]][[1]] %>%
+  dplyr::select(-title, -V2)
 
 # calculate total views for all languages
 total_views <- function(data_file){
   view_total <- 0
   for(i in 1:length(data_file)){
     for(j in 1:length(data_file[[i]])){
-    view_total <- view_total + sum(data_file[[i]][[j]]$views)
+    view_total <- view_total + sum(data_file[[i]][[j]]$views, na.rm = TRUE)
     }
   }
   print(view_total)
 }
 
 # run function for total views
-total_views(language_views)
+total_views(language_views_edit)
 
 # calculate total views for each language
 group_views <- function(data_file){
   language_total <- c(rep(0, 10))
   for(i in 1:length(language_views)){
     for(j in 1:length(language_views[[i]])){
-      language_total[[i]] <- language_total[[i]] + sum(language_views[[i]][[j]]$views)
+      language_total[[i]] <- language_total[[i]] + sum(language_views[[i]][[j]]$views, na.rm = TRUE)
     }
   }
   
@@ -77,18 +80,23 @@ group_views <- function(data_file){
 }
 
 # run function for each language views and build bar plot
-plot_views <- group_views(language_views) %>%
+plot_views <- group_views(language_views_edit) %>%
   mutate(language = factor(language, levels = languages, 
                            labels = c("Spanish", "French", "German", "Japanese", "Italian", 
                                       "Arabic", "Russian", "Portuguese", "Chinese", "English"))) %>%
   mutate(language = fct_reorder(language, -views)) %>%
   ggplot() +
     geom_bar(aes(x = language, y = views), stat = "identity") + 
-    xlab("Language") +
-    ylab("Total views") +
-    #scale_y_continuous(expand = c(0, 0), limits = c(0, 60000)) +
-    theme_bw()
+    geom_text(aes(x = language, y = views + 28000000, label = (round(views/1000000, digits = 2)))) +
+    xlab("Wiki project (language)") +
+    ylab("Total user views (millions)") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 1200000000), 
+                       breaks = c(0, 300000000, 600000000, 900000000, 1200000000), labels = c("0", "300", "600", "900", "1200")) +
+    theme_bw() +
+    theme(panel.grid = element_blank())
 
+# save the plot
+ggsave("outputs/all_views_languages.png", dpi = 350, scale = 1)
 
 
 
