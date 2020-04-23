@@ -4,6 +4,100 @@ library(data.table)
 library(forcats)
 library(ggplot2)
 
+# read in additional functions
+source("00.functions.R")
+
+# read in the view data for all taxonomic classes
+# loop through each directory and create a list of all files for users
+view_directories <- function(languages, directory, view_files){
+  
+  # bring in all the files in that directory
+  view_files <- list.files(directory)
+  
+  # set up empty list for files for each language
+  user_files <- list()
+  
+  # set up each of the file directories
+  for(i in 1:length(languages)){
+    user_files[[i]] <- list.files(directory, pattern = languages[i])
+    user_files[[i]] <- paste0(directory, "", user_files[[i]])
+  }
+  
+  # return list of full file paths for each language
+  return(user_files)
+}
+
+# run the funcion with 10 languages, specifying the directory
+user_files <- view_directories(languages = c("^en_", "^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_"),
+                 directory = "Z:/submission_2/user_trends/")
+                 
+# read in all the files in groups for each language
+language_views <- list()
+for(i in 1:length(user_files)){
+  language_views[[i]] <- lapply(user_files[[i]], fread, nrows = 100, encoding = "UTF-8")
+}
+
+# remove extra error columns from chinese dataframe
+language_views[[10]][[1]] <- language_views[[10]][[1]] %>%
+  select(-title, -V2)
+
+# calculate total views for all languages
+total_views <- function(data_file){
+  view_total <- 0
+  for(i in 1:length(data_file)){
+    for(j in 1:length(data_file[[i]])){
+    view_total <- view_total + sum(data_file[[i]][[j]]$views)
+    }
+  }
+  print(view_total)
+}
+
+# run function for total views
+total_views(language_views)
+
+# calculate total views for each language
+group_views <- function(data_file){
+  language_total <- c(rep(0, 10))
+  for(i in 1:length(language_views)){
+    for(j in 1:length(language_views[[i]])){
+      language_total[[i]] <- language_total[[i]] + sum(language_views[[i]][[j]]$views)
+    }
+  }
+  print(language_total)
+}
+
+# run function for each language views
+group_views(language_views)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # read in class level lambdas
 bird <- read.csv("data/birds_data_conf_lambda.csv", stringsAsFactors = FALSE)
 insect <- read.csv("data/insects_data_conf_lambda.csv", stringsAsFactors = FALSE)
