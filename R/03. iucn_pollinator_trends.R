@@ -4,19 +4,15 @@ library(data.table)
 library(rlpi)
 library(ggplot2)
 library(forcats)
-library(rvest)
 library(boot)
 
 # source the functions R script
 source("R/00. functions.R")
 
-# read in total monthtly views user
-# iucn_views <- read.csv("wikipedia_data/iucn_total_monthly_views_user.csv", stringsAsFactors = FALSE)
-
 # read in view data for daily views
-bird_views <- read.csv("data/bird_user_trends.csv", stringsAsFactors = FALSE)
-mammal_views <- read.csv("data/mammal_user_trends.csv", stringsAsFactors = FALSE)
-insect_views <- read.csv("data/insect_user_trends.csv", stringsAsFactors = FALSE)
+bird_views <- fread("Z:/submission_2/user_trends/en_aves__user_trends.csv", stringsAsFactors = FALSE)
+mammal_views <- fread("Z:/submission_2/user_trends/en_mammalia__user_trends.csv", stringsAsFactors = FALSE)
+insect_views <- fread("Z:/submission_2/user_trends/en_insecta__user_trends.csv", stringsAsFactors = FALSE)
 
 # aggregate the views for each of birds, mammals, and insects by month
 bird_av <- run_dat(bird_views, av_all = FALSE)
@@ -49,10 +45,10 @@ for(i in 1:length(iucn_pollinators)){
 
 ### put each dataframe into the lpi structure and run lpi
 # rescale each dataframe to start at 1970 and merge back with the views
-iucn_views_poll <- lapply(iucn_views_poll, rescale_iucn)
+iucn_pollinators_comp <- lapply(iucn_views_poll, rescale_iucn)
 
 # create data.frame for those with 53 rows (full time series)
-iucn_pollinators_comp <- lapply(iucn_views_poll, select_comp)
+# iucn_pollinators_comp <- lapply(iucn_views_poll, select_comp)
 
 # save pollinator list as rds
 saveRDS(iucn_pollinators_comp, "data/iucn_pollinators_comp.rds")
@@ -76,15 +72,15 @@ for(i in 1:length(groupings)){
 
 lpi_trends <- list()
 for(i in 1:length(groupings)){
-  lpi_trends[[i]] <- LPIMain(paste(groupings[i], "pages_all_infile.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2029)
+  lpi_trends[[i]] <- LPIMain(paste(groupings[i], "pages_all_infile.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2033)
 }
 
 # save rds for pollinator trends
-saveRDS(lpi_trends, "data/lpi_trends_pollinator_comp-series_2.rds")
+saveRDS(lpi_trends, "data/lpi_trends_pollinator_en_sub_2.rds")
 
 
 ### make plot for trends
-lpi_trends <- readRDS("data/lpi_trends_pollinator_comp-series_2.rds")
+lpi_trends <- readRDS("data/lpi_trends_pollinator_en_sub_2.rds")
 
 # add column for class and pollinating
 for(i in 1:length(class_group)){
@@ -109,26 +105,30 @@ lpi_trends %>%
   theme(panel.grid = element_blank())
 
 ### random monthly trend
-# random_monthly_trends_init <- read.csv("wikipedia_data/random_total_monthly_views_user.csv", stringsAsFactors = FALSE)
-random_monthly_trends_init <- read.csv("data/random_user_trends.csv", stringsAsFactors = FALSE)
+random_monthly_trends_init <- fread("Z:/submission_2/user_trends/en_random__user_trends.csv", stringsAsFactors = FALSE)
 
+# remove NA random pages
+random_monthly_trends <- random_monthly_trends_init %>%
+  filter(!is.na(timestamp))
+         
 # aggregate the views for the random trend
-random_monthly_trends_init <- run_dat(random_monthly_trends_init, av_all = FALSE)
+random_monthly_trends <- run_dat(random_monthly_trends, av_all = FALSE)
 
 # subset the random pages for just 2000 pages
-#random_unique <- unique(random_monthly_trends_init$article)[0:5000]
-random_monthly_trends_init <- random_monthly_trends_init %>%
+unique_random <- unique(random_monthly_trends$article)[0:5000]
+random_monthly_trends <- random_monthly_trends %>%
   mutate(year = as.numeric(year)) %>%
-  mutate(month = as.numeric(month))
+  mutate(month = as.numeric(month)) %>%
+  filter(article %in% unique_random)
   
 # select only complete time series
-random_monthly_trends_init <- select_comp(random_monthly_trends_init)
+# random_monthly_trends_init <- select_comp(random_monthly_trends_init)
 
 # subtract 2015 to get first year as '0', then multiply by 12 so each original year represents 12 'years', add months and add 1970 for baseline
-random_monthly_trends <- plyr::ddply(random_monthly_trends_init, c("article", "year", "month"), summarise, dec_date = (1970 + (year - 2015)*12 + month))
+random_monthly_trends_date <- plyr::ddply(random_monthly_trends, c("article", "year", "month"), summarise, dec_date = (1970 + (year - 2015)*12 + month))
 
 # Merge back into view data
-random_monthly_trends <- merge(random_monthly_trends, random_monthly_trends_init, by=c("article", "year", "month"), all = T)
+random_monthly_trends <- merge(random_monthly_trends_date, random_monthly_trends, by=c("article", "year", "month"), all = T)
 
 # Create unique ID for each page/species using factor
 random_monthly_trends$id <- as.numeric(as.factor(random_monthly_trends$article))
@@ -149,9 +149,9 @@ infile_df <- data.frame(FileName="random_trend_data.txt", Group = 1, Weighting =
 write.table(infile_df, "random_pages_all_infile.txt", row.names = F)
 
 # run rlpi and save as rds
-random_wiki_lpi <- LPIMain("random_pages_all_infile.txt", REF_YEAR = 1977, PLOT_MAX = 2029, basedir = ".")
-saveRDS(random_wiki_lpi, "data/lpi_trend_random_3.rds")
-random_wiki_lpi <- readRDS("data/lpi_trend_random_3.rds")
+random_wiki_lpi <- LPIMain("random_pages_all_infile.txt", REF_YEAR = 1977, PLOT_MAX = 2033, basedir = ".")
+saveRDS(random_wiki_lpi, "data/lpi_trend_random_en_sub_2.rds")
+random_wiki_lpi <- readRDS("data/lpi_trend_random_en_sub_2.rds")
 
 # adjust the year column
 random_wiki_lpi$date <- as.numeric(rownames(random_wiki_lpi))
@@ -162,38 +162,45 @@ random_wiki_lpi$Year <- as.character(random_wiki_lpi$Year)
 lpi_trends <- lapply(lpi_trends, join_random)
 
 #### Robin calculating lambdas
-lpi_trends_corr = lpi_trends
+lpi_trends_corr <- lpi_trends
 #
 for (i in 1:length(lpi_trends_corr)) {
   group_index = lpi_trends_corr[[i]]
 
   index_values = group_index$LPI_final.x
-  lambdas = diff(log10(index_values[1:53]))
+  lambdas = diff(log10(index_values[1:57]))
 
   random_index = group_index$LPI_final.y
-  r_lambdas = diff(log10(random_index[1:53]))
+  r_lambdas = diff(log10(random_index[1:57]))
 
   corrected_lambdas = lambdas - r_lambdas
 
   corrected_index = cumprod(10^c(0, corrected_lambdas))
 
-    lpi_trends_corr[[i]]$LPI_final.x[1:53] = corrected_index
+  lpi_trends_corr[[i]]$LPI_final.x[1:57] = corrected_index
 
 }
 
 # Load lambda file of interest
-bird_lambdas_N = read.csv("data/bird_N_data_lambda.csv", row.names = 1)
-bird_lambdas_Y = read.csv("data/bird_Y_data_lambda.csv", row.names = 1)
-insect_lambdas_N = read.csv("data/insect_N_data_lambda.csv", row.names = 1)
-insect_lambdas_Y = read.csv("data/insect_Y_data_lambda.csv", row.names = 1)
-mammal_lambdas_N = read.csv("data/mammal_N_data_lambda.csv", row.names = 1)
-mammal_lambdas_Y = read.csv("data/mammal_Y_data_lambda.csv", row.names = 1)
+bird_lambdas_N <- read.csv("bird_N_data_lambda.csv", row.names = 1)
+bird_lambdas_Y <- read.csv("bird_Y_data_lambda.csv", row.names = 1)
+insect_lambdas_N <- read.csv("insect_N_data_lambda.csv", row.names = 1)
+insect_lambdas_Y <- read.csv("insect_Y_data_lambda.csv", row.names = 1)
+mammal_lambdas_N <- read.csv("mammal_N_data_lambda.csv", row.names = 1)
+mammal_lambdas_Y <- read.csv("mammal_Y_data_lambda.csv", row.names = 1)
 
 # lambda groupings
 # create list of data and vectors for assigning new column
 lambda_data <- list(bird_lambdas_N, bird_lambdas_Y, insect_lambdas_N, insect_lambdas_Y, mammal_lambdas_N, mammal_lambdas_Y)
 class_group_lambda <- c("bird", "bird", "insect", "insect", "mammal", "mammal")
 pollinat_NY <- c("N", "Y", "N", "Y", "N", "Y")
+
+# remove NAs from each of lambda files
+remove_NAs <- function(data){
+  data_new <- data[complete.cases(data), ]
+}
+
+lambda_data <- lapply(lambda_data, remove_NAs)
 
 ### script for calculating the confidence interval for each grouping
 
@@ -211,6 +218,7 @@ run_each_group <- function(data){
 
   # Random adjusted species trends
   adj_lambdas = sweep(data[4:ncol(data)],2,r_lambdas)
+  
   # Bootstrap these to get confidence intervals
   dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
 
