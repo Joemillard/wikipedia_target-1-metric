@@ -44,8 +44,6 @@ system.time(for(i in 1:length(user_files)){
   language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8")
 })
 
-# add script to calculate total monthly views and write to rds
-
 # remove extra error columns from chinese dataframe - extra dataframe to avoid overwrite
 language_views_edit <- language_views
 language_views_edit[[9]][[1]] <- language_views_edit[[9]][[1]] %>%
@@ -98,7 +96,7 @@ plot_views <- group_views(language_views_edit) %>%
 # save the plot
 ggsave("outputs/all_views_languages.png", dpi = 350, scale = 1)
 
-
+# script to calculate total monthly views and write to rds
 
 
 ## 
