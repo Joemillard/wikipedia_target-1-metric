@@ -63,7 +63,7 @@ total_views <- function(data_file){
 }
 
 # run function for total views
-total_views(language_views_edit)
+total_views(language_views_edit) # 2227539617 (2.23 billion)
 
 # calculate total views for each language
 group_views <- function(data_file){
