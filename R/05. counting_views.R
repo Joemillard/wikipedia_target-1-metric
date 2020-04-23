@@ -5,7 +5,9 @@ library(forcats)
 library(ggplot2)
 
 # read in additional functions
-source("00.functions.R")
+source("R/00. functions.R")
+
+languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -28,13 +30,13 @@ view_directories <- function(languages, directory, view_files){
 }
 
 # run the funcion with 10 languages, specifying the directory
-user_files <- view_directories(languages = c("^en_", "^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_"),
+user_files <- view_directories(languages,
                  directory = "Z:/submission_2/user_trends/")
                  
 # read in all the files in groups for each language
 language_views <- list()
 for(i in 1:length(user_files)){
-  language_views[[i]] <- lapply(user_files[[i]], fread, nrows = 100, encoding = "UTF-8")
+  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8")
 }
 
 # remove extra error columns from chinese dataframe
@@ -63,17 +65,30 @@ group_views <- function(data_file){
       language_total[[i]] <- language_total[[i]] + sum(language_views[[i]][[j]]$views)
     }
   }
-  print(language_total)
+  
+  # build dataframe for views for each language and return it
+  language_total <- data.frame("language" = languages, "views" = language_total)
+  return(language_total)
 }
 
-# run function for each language views
-group_views(language_views)
+# run function for each language views and build bar plot
+plot_views <- group_views(language_views) %>%
+  mutate(language = factor(language, levels = languages, 
+                           labels = c("Spanish", "French", "German", "Japanese", "Italian", 
+                                      "Arabic", "Russian", "Portuguese", "Chinese", "English"))) %>%
+  mutate(language = fct_reorder(language, -views)) %>%
+  ggplot() +
+    geom_bar(aes(x = language, y = views), stat = "identity") + 
+    xlab("Language") +
+    ylab("Total views") +
+    #scale_y_continuous(expand = c(0, 0), limits = c(0, 60000)) +
+    theme_bw()
 
 
 
 
 
-
+## 
 
 
 
