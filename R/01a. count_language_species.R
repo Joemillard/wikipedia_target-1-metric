@@ -106,3 +106,5 @@ total_species_language <- total_species + total_species_plot + plot_layout(ncol 
 
 # save the combined plot
 ggsave("outputs/total_language_species.png", scale = 1.3, dpi = 350)
+
+## plot for complete time series
