@@ -22,7 +22,7 @@ count_total_species <- function(data_file){
   return(data_fin)
 }
 
-# build dataframe number of species for each grouping and reassign columns (maintains order of languages/classes)
+# build dataframe with number of species for each grouping and rename columns (maintains order of languages/classes)
 run_count_total <- function(data_file, languages, classes){
   total_species <- list()
   for(i in 1:length(data_file)){
