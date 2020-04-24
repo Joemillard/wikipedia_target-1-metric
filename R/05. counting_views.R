@@ -1,4 +1,4 @@
-## script for counting the number of views and pollinators in analysis
+## script for counting the number of views in analysis, and write total monthly views to rds
 library(dplyr)
 library(data.table)
 library(forcats)
@@ -96,18 +96,32 @@ plot_views <- group_views(language_views_edit) %>%
 # save the plot
 ggsave("outputs/all_views_languages.png", dpi = 350, scale = 1)
 
-# script to calculate total monthly views and write to rds
-language_views_monthly <- list()
-for(i in 1:length(language_views_edit)){
-  language_views_monthly[[i]] <- lapply(language_views_edit[[i]], run_dat, av_all = FALSE)
+## script to calculate total monthly views and write to rds
+# filter NAs from timestamp
+NA_timestamp <- function(data_file){
+  data_fin <- data_file %>%
+    filter(!is.na(timestamp))
+  return(data_fin)
 }
 
+# filter NA rows (timestamps) from each set of views 
+language_views_monthly <- list()
+for(i in 1:length(language_views_edit)){
+  language_views_monthly[[i]] <- lapply(language_views_edit[[i]], NA_timestamp)
+}
 
-## 
+# calculate total monthly views for each set of views
+for(i in 1:length(language_views_monthly)){
+  language_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
+}
+
+# save total monthly views as an rds
+saveRDS(language_views_monthly, "total_monthly_views_10-languages.rds")
 
 
 
 
+#
 
 
 
