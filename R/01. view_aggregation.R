@@ -8,11 +8,10 @@ library(parallel)
 # read in additional functions
 source("R/00. functions.R")
 
-# set up vector for languages
+# set up vector for languages, classes, and directory
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
-# languages <- c("^zh_")
-
 directory <- "J:/submission_2/user_trends/"
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -115,8 +114,14 @@ for(i in 1:length(language_views_monthly)){
   language_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
 }
 
+# add names for languages and class to each element of the list
+names(language_views_monthly) <- languages
+for(i in 1:length(language_views_monthly)){
+  names(language_views_monthly[[i]]) <- classes
+}
+
 # save total monthly views as an rds
-saveRDS(language_views_monthly, "total_monthly_views_10-languages.rds")
+saveRDS(language_views_monthly, "J:/submission_2/total_monthly_views_10-languages.rds")
 
 
 

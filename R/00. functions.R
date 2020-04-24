@@ -40,11 +40,11 @@ run_dat <- function(terms_1, av_all){
   terms$day <- substr(terms$timestamp, start = 7, stop = 8)
   
   terms <- terms %>%
-    select(article, year, month, views)
+    select(article, q_wikidata, year, month, views)
   
   # calculate average per each month
   terms_av <- terms %>%
-    group_by(article, year, month) %>%
+    group_by(article, q_wikidata, year, month) %>%
     summarise(av_views = sum(views)) %>%
     ungroup()
   
