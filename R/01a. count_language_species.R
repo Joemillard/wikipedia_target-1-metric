@@ -61,21 +61,29 @@ for(i in 1:length(languages)){
       scale_y_continuous(limits = c(0, 11000), expand = c(0, 0)) +
       ylab(NULL) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), panel.grid.minor = element_blank())
+      theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+            panel.grid.minor = element_blank(), 
+            axis.title.y = element_text(size = 15))
     
   # step up slice of data for languages
     step <- step + 6
 }
 
-# iterate through each plot, and it to previous for patchwork
+# iterate through each plot, and add it to previous for patchwork
 combine_plots <- function(plot_list){
   for(i in 1:length(plot_list)){
     if(i == 1){
       total_species_plot <- plot_list[[i]]
     }
     if(i > 1){
-      total_species_plot <- total_species_plot + plot_list[[i]]
+      if(i == 5){
+        total_species_plot <- total_species_plot + (plot_list[[i]] + ylab("Total species"))
+      }
+      else{
+        total_species_plot <- total_species_plot + plot_list[[i]]
+      }
     }
+    
   }
   return(total_species_plot)
 }
