@@ -27,8 +27,6 @@ sleep_period = 1.5
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
     pages = pd.DataFrame(view_pages)
-    # pages.columns = ['language', 'wiki_id', 'wiki_title']
-    # pages['taxa'] = 'Random'
     pages = pages[['wiki_title', 'wiki_id']]
     pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'})
     # pages = pages.head(no_pages) #  add to subset for smaller sample

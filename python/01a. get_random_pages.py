@@ -34,7 +34,7 @@ for l in range(0, len(languages)):
         "rnnamespace": "0"
     }
 
-    for i in range(0, 12):
+    for i in range(0, 22):
         # Get wiki article titles
         R = S.get(url=URL, params=PARAMS)
         DATA = R.json()
@@ -54,7 +54,7 @@ for l in range(0, len(languages)):
     print(languages[l])
 
 final = pd.concat(result)
-save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv'
+save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages_11000.csv'
 final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
 
     
