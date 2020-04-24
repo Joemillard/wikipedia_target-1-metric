@@ -37,11 +37,11 @@ run_count_total <- function(data_file, languages, classes){
   return(total_species)
 }
 
-# plot number of species for each language, with separate factor order on the x axis - slice for each language
+## plot number of species for each language, with separate factor order on the x axis - slice for each language
 ind_species_plot <- list()
 step <- 6
 for(i in 1:length(languages)){
-  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes) %>% 
+  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes) %>%
     reshape2::melt(id  = "language") %>%
     arrange(language) %>%
     group_by(language) %>%
@@ -63,7 +63,7 @@ for(i in 1:length(languages)){
       theme_bw() +
       theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
             panel.grid.minor = element_blank(), 
-            axis.title.y = element_text(size = 15))
+            axis.title.y = element_text(size = 13, vjust = 0.9))
     
   # step up slice of data for languages
     step <- step + 6
@@ -76,12 +76,7 @@ combine_plots <- function(plot_list){
       total_species_plot <- plot_list[[i]]
     }
     if(i > 1){
-      if(i == 5){
-        total_species_plot <- total_species_plot + (plot_list[[i]] + ylab("Total species"))
-      }
-      else{
         total_species_plot <- total_species_plot + plot_list[[i]]
-      }
     }
     
   }
@@ -89,17 +84,25 @@ combine_plots <- function(plot_list){
 }
 
 # run the function to combine all plots, and add the column layout
-total_species_plot <- combine_plots(ind_species_plot) + plot_layout(ncol = 4)
+total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)} + plot_annotation(tag_levels = 'A')
+
+## plot number of species in each class
+total_species <- run_count_total(total_monthly_views, languages, classes) %>%
+  reshape2::melt(id  = "language") %>% 
+  group_by(variable) %>%
+  summarise(total = sum(value)) %>%
+  ungroup() %>%
+  mutate(variable = fct_reorder(variable, -total)) %>%
+  ggplot() +
+    geom_bar(aes(x = variable, y = total), stat = "identity") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 50000)) +
+    xlab(NULL) +
+    ylab("Total species") +
+    theme_bw() +
+    theme(panel.grid.minor = element_blank(), 
+          axis.title.y = element_text(size = 13))
+
+total_species_language <- total_species + total_species_plot + plot_layout(ncol = 1)
 
 # save the combined plot
 ggsave("outputs/total_language_species.png", scale = 1.3, dpi = 350)
-
-
-
-
-
-
-count_complete_species <- function(data_file){
-  data_file %>%
-    group_
-}
