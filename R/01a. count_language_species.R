@@ -47,8 +47,8 @@ for(i in 1:length(languages)){
     group_by(language) %>%
     mutate(total = sum(value)) %>%
     ungroup() %>%
-    arrange(desc(total)) %>%
-    slice((step-5):step) %>%
+    arrange(desc(total)) %>% 
+    slice((step-5):step) %>% print() %>%
     mutate(language = factor(language, levels = languages, 
                             labels = c("Spanish", "French", "German", "Japanese", "Italian", 
                                       "Arabic", "Russian", "Portuguese", "Chinese (Mandarin)", "English"))) %>%
@@ -84,7 +84,7 @@ combine_plots <- function(plot_list){
 }
 
 # run the function to combine all plots, and add the column layout
-total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)} + plot_annotation(tag_levels = 'A')
+total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)}
 
 ## plot number of species in each class
 total_species <- run_count_total(total_monthly_views, languages, classes) %>%
