@@ -11,25 +11,27 @@ S = requests.Session()
 
 # read in the list of pages
 # pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
-pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # CBER PC
+pages = pd.read_csv('J:/submission_2/all_iucn_titles.csv') # CBER PC
 
 # read in the random pages
 # random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # home PC
-random_pages = pd.read_csv('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # CBER PC
+random_pages = pd.read_csv('J:/submission_2/random_pages_11000.csv') # CBER PC
 
 # languages for views
-languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
+# languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
+languages = ['ar', 'ja']
 
 # set parameters for random pages and sleep
-no_pages = 2
-sleep_period = 1.5
+no_pages = 7000
+sleep_period = 0.5
 
 # define function for subsetting the random dataframe
 def build_rand(view_pages, no_pages):
     pages = pd.DataFrame(view_pages)
     pages = pages[['wiki_title', 'wiki_id']]
     pages = pages.rename(columns = {'wiki_title':'title', 'wiki_id':'q_wikidata'})
-    # pages = pages.head(no_pages) #  add to subset for smaller sample
+    pages = pages.drop_duplicates(subset = "title")
+    pages = pages.head(no_pages) #  add to subset for smaller sample
     pages.index = range(len(pages.index))
     return(pages)
 
@@ -52,25 +54,27 @@ for l in range(0, len(languages)):
     language_random = random_pages[random_pages.language == languages[l]]
 
     # split the pages up into each class of interest
-    actinopterygii = language_pages[language_pages.class_name == 'ACTINOPTERYGII']
-    amphibia = language_pages[language_pages.class_name =='AMPHIBIA']
-    aves = language_pages[language_pages.class_name == 'AVES']
-    insecta = language_pages[language_pages.class_name == 'INSECTA']
-    mammalia = language_pages[language_pages.class_name == 'MAMMALIA']
-    reptilia = language_pages[language_pages.class_name == 'REPTILIA']
+    # actinopterygii = language_pages[language_pages.class_name == 'ACTINOPTERYGII']
+    # amphibia = language_pages[language_pages.class_name =='AMPHIBIA']
+    # aves = language_pages[language_pages.class_name == 'AVES']
+    # insecta = language_pages[language_pages.class_name == 'INSECTA']
+    # mammalia = language_pages[language_pages.class_name == 'MAMMALIA']
+    # reptilia = language_pages[language_pages.class_name == 'REPTILIA']
 
     # filter for just the article paegs to search for views
-    actinopterygii_pages = build_taxa(actinopterygii, no_pages)
-    amphibia_pages = build_taxa(amphibia, no_pages)
-    aves_pages = build_taxa(aves, no_pages)
-    insecta_pages = build_taxa(insecta, no_pages)
-    mammalia_pages = build_taxa(mammalia, no_pages)
-    reptilia_pages = build_taxa(reptilia, no_pages)
+    # actinopterygii_pages = build_taxa(actinopterygii, no_pages)
+    # amphibia_pages = build_taxa(amphibia, no_pages)
+    # aves_pages = build_taxa(aves, no_pages)
+    # insecta_pages = build_taxa(insecta, no_pages)
+    # mammalia_pages = build_taxa(mammalia, no_pages)
+    # reptilia_pages = build_taxa(reptilia, no_pages)
     language_random = build_rand(language_random, no_pages)
 
     # create list of each taxa object, with string corresponding at each index
-    taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, language_random]
-    taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
+    # taxa = [actinopterygii_pages, amphibia_pages, aves_pages, insecta_pages, mammalia_pages, reptilia_pages, language_random]
+    taxa = [language_random] # version for extra random views
+    # taxa_strings = ["actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"]
+    taxa_strings = ["random_2"] # version for extra random views
 
     # iterate through each taxa/random object, set up empty list, and then iterate each taxa object each article
     for j in range(0, len(taxa)):
@@ -113,7 +117,7 @@ for l in range(0, len(languages)):
         # concatenate all appended results to dataframe and write to csv for each subset
         final = pd.concat(result)
         taxa_level = taxa_strings[j]
-        # save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
-        save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
+        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
+        # save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
         final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
     
