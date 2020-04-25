@@ -96,7 +96,7 @@ total_species <- run_count_total(total_monthly_views, languages, classes) %>%
   ggplot() +
     geom_bar(aes(x = variable, y = total), stat = "identity") +
     scale_y_continuous(expand = c(0, 0), limits = c(0, 50000)) +
-    xlab(NULL) +
+    xlab("") +
     ylab("Total species") +
     theme_bw() +
     theme(panel.grid.minor = element_blank(), 
