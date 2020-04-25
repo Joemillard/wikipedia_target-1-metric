@@ -10,12 +10,12 @@ from pandas.io.json import json_normalize
 S = requests.Session()
 
 # read in the list of pages
-# pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
-pages = pd.read_csv('J:/submission_2/all_iucn_titles.csv') # CBER PC
+pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
+# pages = pd.read_csv('Z:/submission_2/all_iucn_titles.csv') # CBER PC
 
 # read in the random pages
-# random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages.csv') # home PC
-random_pages = pd.read_csv('J:/submission_2/random_pages_11000.csv') # CBER PC
+random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages_11000.csv') # home PC
+# random_pages = pd.read_csv('Z:/submission_2/random_pages_11000.csv') # CBER PC
 
 # languages for views
 # languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
