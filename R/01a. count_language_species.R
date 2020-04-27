@@ -117,6 +117,7 @@ count_months <- function(data_file){
   return(data_fin)
 }
 
+# run function to count number of months of views per article
 total_months <- list()
 for(i in 1:length(total_monthly_views)) {
   total_months[[i]] <- lapply(total_monthly_views[[i]], count_months)
@@ -124,27 +125,17 @@ for(i in 1:length(total_monthly_views)) {
 
 # count number of complete series for each language/class combination
 for(i in 1:length(total_months)){
-  
-  # print the language, and iterate through each class of that language
-  print(languages[i])
+  print(languages[i]) # print the language, and iterate through each class of that language
   for(j in 1:length(total_months[[i]])){
     counter <- 0
-    
-    # calculate number of species for that class, and count through each species
-    total_number <- length(total_months[[i]][[j]]$n)
+    total_number <- length(total_months[[i]][[j]]$n) # calculate number of species for that class, and count through each species
     for(k in 1:length(total_months[[i]][[j]]$n)){
-      
-      # if complete series, add one to counter
       if(total_months[[i]][[j]]$n[k] == 57){
-        counter <- counter + 1
+        counter <- counter + 1 # if complete series, add one to counter
       }
     }
-    
-    # calculate the proportion of complete series for that class
-    proportion <- counter / total_number
-    
-    # print the class, number of complete series, the total number of articles, and proportion complete
-    print(paste(classes[j], counter, total_number, proportion))
+    proportion <- counter / total_number # calculate the proportion of complete series for that class
+    print(paste(classes[j], counter, total_number, proportion)) # print the class, number of complete series, the total number of articles, and proportion complete
   }
 }
 
