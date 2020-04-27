@@ -122,11 +122,7 @@ for(i in 1:length(total_monthly_views)) {
   total_months[[i]] <- lapply(total_monthly_views[[i]], count_months)
 }
 
-
-
-
-
-#total_number <- list
+# count number of complete series for each language/class combination
 for(i in 1:length(total_months)){
   
   # print the language, and iterate through each class of that language
