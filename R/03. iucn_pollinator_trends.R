@@ -221,7 +221,7 @@ run_each_group <- function(data){
   #print(adj_lambdas)
   
   # Bootstrap these to get confidence intervals
-  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
   print(dbi.boot)
   
   
