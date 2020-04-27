@@ -120,19 +120,31 @@ count_months <- function(data_file){
 total_months <- list()
 for(i in 1:length(total_monthly_views)) {
   total_months[[i]] <- lapply(total_monthly_views[[i]], count_months)
-
 }
 
-counter <- 0
-for(i in 1:length(total_months[[1]][[1]]$n)){
-  total_number <- length(total_months[[1]][[1]]$n)
-  if(total_months[[1]][[1]]$n[i] == 57){
-    counter <- counter + 1
+
+
+
+
+#total_number <- list
+for(i in 1:length(total_months)){
+  print(languages[i])
+  for(j in 1:length(total_months[[i]])){
+    #print(classes[j])
+    counter <- 0
+    total_number <- length(total_months[[i]][[j]]$n)
+    for(k in 1:length(total_months[[i]][[j]]$n)){
+      if(total_months[[i]][[j]]$n[k] == 57){
+        counter <- counter + 1
+      }
+    }
+    proportion <- counter / total_number
+    print(paste(proportion, classes[j]))
   }
 }
-proportion <- counter / total_number
+print(proportion)
 
-
+#print(proportion)
 
 
 
