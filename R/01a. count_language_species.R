@@ -139,7 +139,7 @@ for(i in 1:length(total_months)){
       }
     }
     proportion <- counter / total_number
-    print(paste(proportion, classes[j]))
+    print(paste(classes[j], counter, total_number, proportion))
   }
 }
 print(proportion)
