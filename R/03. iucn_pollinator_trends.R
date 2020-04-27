@@ -208,7 +208,7 @@ lambda_data <- lapply(lambda_data, remove_NAs)
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   this_lambdas = lambdas[ind, ]
   
-  mean_ann_lambda = colMeans(this_lambdas)
+  mean_ann_lambda = colMeans(this_lambdas, na.rm = TRUE)
   
   trend = cumprod(10^c(0, mean_ann_lambda))
   return(trend)
@@ -217,16 +217,20 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(data){
 
   # Random adjusted species trends
-  adj_lambdas = sweep(data[4:ncol(data)],2,r_lambdas)
+  adj_lambdas = sweep(data[4:ncol(data)], 2, r_lambdas, FUN = "-")
+  #print(adj_lambdas)
   
   # Bootstrap these to get confidence intervals
-  dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
-
+  dbi.boot = boot(adj_lambdas, create_lpi, R = 100)
+  print(dbi.boot)
+  
+  
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
+  #print(boot_res)
   boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
-  boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95)) 
-  boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05))
+  boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95), na.rm = TRUE) 
+  boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05), na.rm = TRUE)
   
   return(boot_res)
 
