@@ -218,16 +218,12 @@ run_each_group <- function(data){
 
   # Random adjusted species trends
   adj_lambdas = sweep(data[4:ncol(data)], 2, r_lambdas, FUN = "-")
-  #print(adj_lambdas)
-  
+
   # Bootstrap these to get confidence intervals
   dbi.boot = boot(adj_lambdas, create_lpi, R = 10000)
-  print(dbi.boot)
-  
-  
+
   # Construct dataframe and get 95% intervals
   boot_res = data.frame(LPI = dbi.boot$t0)
-  #print(boot_res)
   boot_res$Year = random_wiki_lpi$Year[1:(nrow(random_wiki_lpi)-1)]
   boot_res$LPI_upr = apply(dbi.boot$t, 2, quantile, probs = c(0.95), na.rm = TRUE) 
   boot_res$LPI_lwr = apply(dbi.boot$t, 2, quantile, probs = c(0.05), na.rm = TRUE)
