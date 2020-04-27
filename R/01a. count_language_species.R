@@ -108,3 +108,31 @@ total_species_language <- total_species + total_species_plot + plot_layout(ncol 
 ggsave("outputs/total_language_species.png", scale = 1.3, dpi = 350)
 
 ## plot for complete time series
+# count number of months of views per article
+count_months <- function(data_file){
+  data_fin <- data_file %>%
+    group_by(article) %>%
+    tally()
+  
+  return(data_fin)
+}
+
+total_months <- list()
+for(i in 1:length(total_monthly_views)) {
+  total_months[[i]] <- lapply(total_monthly_views[[i]], count_months)
+
+}
+
+counter <- 0
+for(i in 1:length(total_months[[1]][[1]]$n)){
+  total_number <- length(total_months[[1]][[1]]$n)
+  if(total_months[[1]][[1]]$n[i] == 57){
+    counter <- counter + 1
+  }
+}
+proportion <- counter / total_number
+
+
+
+
+
