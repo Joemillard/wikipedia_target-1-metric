@@ -125,9 +125,8 @@ for(i in 1:length(total_monthly_views)) {
 
 # count number of complete series for each language/class combination
 for(i in 1:length(total_months)){
-  print(languages[i]) # print the language, and iterate through each class of that language
   for(j in 1:length(total_months[[i]])){
-    counter <- 0
+    counter <- 0 # set up the counter
     total_number <- length(total_months[[i]][[j]]$n) # calculate number of species for that class, and count through each species
     for(k in 1:length(total_months[[i]][[j]]$n)){
       if(total_months[[i]][[j]]$n[k] == 57){
@@ -135,7 +134,7 @@ for(i in 1:length(total_months)){
       }
     }
     proportion <- counter / total_number # calculate the proportion of complete series for that class
-    print(paste(classes[j], counter, total_number, proportion)) # print the class, number of complete series, the total number of articles, and proportion complete
+    print(paste(languages[i], classes[j], counter, total_number, proportion)) # print the class, number of complete series, the total number of articles, and proportion complete
   }
 }
 
