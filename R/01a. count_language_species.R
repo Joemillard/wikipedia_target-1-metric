@@ -5,6 +5,7 @@ library(reshape2)
 library(ggplot2)
 library(forcats)
 library(patchwork)
+library(here)
 
 # read in the rds for total monthly views
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/total_monthly_views_10-languages.rds"))
@@ -129,7 +130,7 @@ for(i in 1:length(total_months)){
     counter <- 0 # set up the counter
     total_number <- length(total_months[[i]][[j]]$n) # calculate number of species for that class, and count through each species
     for(k in 1:length(total_months[[i]][[j]]$n)){
-      if(total_months[[i]][[j]]$n[k] == 57){
+      if(total_months[[i]][[j]]$n[k] > 29){
         counter <- counter + 1 # if complete series, add one to counter
       }
     }
