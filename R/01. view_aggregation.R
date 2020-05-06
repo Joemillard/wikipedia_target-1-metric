@@ -37,7 +37,7 @@ view_directories <- function(languages, directory, view_files){
 user_files <- view_directories(languages,
                  directory)
                  
-# read in all the files in groups for each language, with parallel processing
+# read in all the files in groups for each language
 language_views <- list()
 system.time(for(i in 1:length(user_files)){
   language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
