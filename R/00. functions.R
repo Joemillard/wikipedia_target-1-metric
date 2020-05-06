@@ -124,7 +124,7 @@ select_comp <- function(x){
     group_by(article) %>%
     tally() %>%
     ungroup() %>%
-    filter(n > 29)
+    filter(n == 57)
   
   # subset from insects only those with 53 rows i.e. complete
   iucn_insects_filt <- x %>%
