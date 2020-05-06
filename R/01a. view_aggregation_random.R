@@ -11,6 +11,7 @@ source("R/00. functions.R")
 # set up vector for languages, classes, and directory
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 directory <- "Z:/submission_2/user_trends/random_views/"
+random_sets <- c("6000", "5500")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -42,17 +43,25 @@ system.time(for(i in 1:length(user_files)){
   language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
 })
 
-# remove duplicated random articles
+# select random unique articles from each random subset
 remove_dups <- function(data_file){
-  article_set_1 <- data_file %>% pull(q_wikidata)
-  article_set_1 <- unique(article_set_1)
+  article_set_1 <- data_file %>% 
+    pull(q_wikidata) %>%
+    unique() %>%
+    as.character()
   return(article_set_1)
 }
 
 # run remove duplicates over each language
+random_no_dup <- list()
 for(i in 1:length(language_views)){
-  random_no_dup[[i]] <- lapply(language_views[[i]], article_set_1)
-  
+  random_no_dup[[i]] <- lapply(language_views[[i]], remove_dups)
+}
+
+# check for any articles that occur in the first random download and the second - no pages in both first and second download
+for(i in 1:length(random_no_dup)){
+  unique_articles <- intersect(random_no_dup[[i]][[1]], random_no_dup[[i]][[2]])
+  print(length(unique_articles))
 }
 
 # calculate total views for all languages
@@ -67,7 +76,7 @@ total_views <- function(data_file){
 }
 
 # run function for total views
-total_views(language_views_edit) # 2227539617 (2.23 billion)
+total_views(language_views) # 2830289115 (2.83 billion)
 
 # calculate total views for each language
 group_views <- function(data_file){
@@ -84,23 +93,23 @@ group_views <- function(data_file){
 }
 
 # run function for each language views and build bar plot
-plot_views <- group_views(language_views_edit) %>%
+plot_views <- group_views(language_views) %>%
   mutate(language = factor(language, levels = languages, 
                            labels = c("Spanish", "French", "German", "Japanese", "Italian", 
                                       "Arabic", "Russian", "Portuguese", "Chinese", "English"))) %>%
   mutate(language = fct_reorder(language, -views)) %>%
   ggplot() +
   geom_bar(aes(x = language, y = views), stat = "identity") + 
-  geom_text(aes(x = language, y = views + 28000000, label = (round(views/1000000, digits = 2)))) +
+  geom_text(aes(x = language, y = views + 23000000, label = (round(views/1000000, digits = 2)))) +
   xlab("Wiki project (language)") +
   ylab("Total user views (millions)") +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, 1200000000), 
-                     breaks = c(0, 300000000, 600000000, 900000000, 1200000000), labels = c("0", "300", "600", "900", "1200")) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 800000000), 
+                     breaks = c(0, 200000000, 400000000, 600000000, 800000000), labels = c("0", "200", "400", "600", "800")) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
 # save the plot
-ggsave("outputs/all_views_languages.png", dpi = 350, scale = 1)
+ggsave("outputs/all_random-views_languages.png", dpi = 350, scale = 1)
 
 ## script to calculate total monthly views and write to rds
 # filter NAs from timestamp
@@ -112,8 +121,8 @@ NA_timestamp <- function(data_file){
 
 # filter NA rows (timestamps) from each set of views 
 language_views_monthly <- list()
-for(i in 1:length(language_views_edit)){
-  language_views_monthly[[i]] <- lapply(language_views_edit[[i]], NA_timestamp)
+for(i in 1:length(language_views)){
+  language_views_monthly[[i]] <- lapply(language_views[[i]], NA_timestamp)
 }
 
 # calculate total monthly views for each set of views
@@ -124,8 +133,19 @@ for(i in 1:length(language_views_monthly)){
 # add names for languages and class to each element of the list
 names(language_views_monthly) <- languages
 for(i in 1:length(language_views_monthly)){
-  names(language_views_monthly[[i]]) <- classes
+  names(language_views_monthly[[i]]) <- random_sets
+}
+
+# bind each pair of random views together, and check that the number of rows is the same after uniquing the bound version
+language_views_monthly_bound <- list()
+for(i in 1:length(language_views_monthly)){
+  language_views_monthly_bound[[i]] <- rbindlist(language_views_monthly[[i]])
+  print(nrow(language_views_monthly_bound[[i]]))
+  language_views_monthly_bound[[i]] %>% 
+    unique() %>% 
+    nrow() %>% 
+    print()
 }
 
 # save total monthly views as an rds
-saveRDS(language_views_monthly, "J:/submission_2/total_monthly_views_10-languages.rds")
+saveRDS(language_views_monthly_bound, "Z:/submission_2/total_monthly_views_random_10-languages.rds")
