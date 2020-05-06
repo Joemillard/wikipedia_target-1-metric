@@ -10,19 +10,18 @@ from pandas.io.json import json_normalize
 S = requests.Session()
 
 # read in the list of pages
-# pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
-pages = pd.read_csv('J:/submission_2/all_iucn_titles.csv') # CBER PC
+pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/all_iucn_titles.csv') # home PC
+# pages = pd.read_csv('J:/submission_2/all_iucn_titles.csv') # CBER PC
 
 # read in the random pages
-# random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages_11000.csv') # home PC
-random_pages = pd.read_csv('J:/submission_2/random_pages_11000.csv') # CBER PC (7000 pages from here)
-random_pages = pd.read_csv('J:/submission_2/random_pages.csv') # CBER PC (6000 pages from here)
+random_pages = pd.read_csv('C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/random_pages_11000.csv') # home PC - # CBER PC (5500 pages from here), because UCL PC shut down
+# random_pages = pd.read_csv('J:/submission_2/random_pages.csv') # CBER PC (6000 pages from here)
 
 # languages for views
 languages = ['en', 'zh', 'fr', 'de', 'es', 'ru', 'pt', 'it', 'ar', 'ja']
 
 # set parameters for random pages and sleep
-no_pages = 7000
+no_pages = 5500
 sleep_period = 0.5
 
 # define function for subsetting the random dataframe
@@ -104,18 +103,27 @@ for l in range(0, len(languages)):
                 result.append(DATA)
                 time.sleep(sleep_period)
 
-            # in event of error, insert row with article title
+            # in event of error retrieving views, insert row with article title
             except KeyError:
             
                 df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'title':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['NA'], 'q_wikidata':[taxa[j]['q_wikidata'][i]]})
                 result.append(df)
                 # write error row to file and don't append
-                print(i, j, "ERROR")
+                print(i, j, "error")
+
+            # in event that blocked from api, insert error row and wait for 5 minutes before reconnecting
+            except IOError:
+                
+                df = pd.DataFrame({'':[''],'access':[''], 'agent':[''], 'title':[title], 'granularity':[''], 'project':[''],'timestamp':[''], 'views':['connect_fail'], 'q_wikidata':[taxa[j]['q_wikidata'][i]]})
+                result.append(df)
+                # write error row to file and don't append
+                print(i, j, "connect_fail")
+                time.sleep(300)
 
         # concatenate all appended results to dataframe and write to csv for each subset
         final = pd.concat(result)
         taxa_level = taxa_strings[j]
-        # save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
-        save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
+        save_loc = 'C:/Users/joeym/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv' % ((languages[l] + '_'), (taxa_level + '_')) # Home PC
+        # save_loc = ('C:/Users/Joseph Millard/Documents/PhD/Aims/Aim 3 - quantifying pollinator cultural value/wikipedia_target-1-metric/data/class_wiki_indices/submission_2/user_trends/%s%s_user_trends.csv') % ((languages[l] + '_'), (taxa_level + '_')) # CBER PC
         final.to_csv(save_loc, sep = ',', encoding = 'utf-8-sig')
     
