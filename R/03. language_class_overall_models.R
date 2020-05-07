@@ -80,7 +80,6 @@ for(i in 1:length(language_views)){
     data_file <- language_views[[i]][[j]]
     adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend[[j]]$lamda))
   }
-  
   all_lambdas[[i]] <- adj_lambdas
 }
 
@@ -112,7 +111,7 @@ for(i in 1:length(all_lambdas)){
   avg_lambdas[[i]] <- lapply(all_lambdas[[i]], average_lambda, taxa = classes[[i]])
 }
 
-# assign final column for language and rbind
+# assign final column for languae
 for(i in 1:length(avg_lambdas)){
   for(j in 1:length(avg_lambdas[[i]])){
     avg_lambdas[[i]][[j]]$language <- languages[[j]]
@@ -128,9 +127,11 @@ for(i in 1:length(avg_lambdas)){
 # rbind together the final dataframes
 final_bound <- rbindlist(final_bound)
 
-# build the models
+# build the models - to work on!!
 model_1 <- lmer(av_lambda ~ taxonomic_class + (1|language), data = final_bound)
 summary(model_1)
+
+
 
 predicted_values <- predict(model_1, final_bound, se.fit = TRUE)
 
