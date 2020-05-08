@@ -34,31 +34,35 @@ for(i in 1:length(random_trend)){
   random_trend[[i]]$language <- languages[i]
 }
 
-rbindlist(random_trend) %>%
-  ggplot() +
-  geom_line(aes(x = Year, y = LPI_final, group = language)) +
-  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-  facet_wrap(~language) +
-  theme_bw()
+# bind together and plot the random trends
+#rbindlist(random_trend) %>%
+#  ggplot() +
+#  geom_line(aes(x = Year, y = LPI_final, group = language)) +
+ # geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+#  facet_wrap(~language) +
+#  theme_bw()
 
-# string for pollinating classes
+# string for pollinating classes, plus random
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
 view_directories <- function(classes, directory){
+  
+  # bring in all the files in that directory and assign to a list
   view_files <- list()
-  # bring in all the files in that directory
   for(i in 1:length(languages)){
     view_files[[i]] <- list.files(directory, pattern = languages[i])
   }
+  
+  # unlist the files in the correct order
   file_order <- unlist(view_files)
 
   # set up empty list for files for each language
   user_files_dir <- list()
   user_files <- list()
 
-  # set up each of the file directories
+  # set up each of the file directories and order consisten with the random overall trend
   for(i in 1:length(classes)){
     user_files[[i]] <- list.files(directory, pattern = classes[i])
     user_files[[i]] <- user_files[[i]][order(match(user_files[[i]], file_order))]
@@ -96,7 +100,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   # remove na rows
   lambdas_new <- lambdas[complete.cases(lambdas), ]
   
-  # select columns to calculate mean of 
+  # select columns from lambda file to calculate mean, and build a cumprod trend
   lambda_data <- lambdas_new[, 5:ncol(lambdas_new)]
   this_lambdas <- lambda_data[ind, ]
   mean_ann_lambda <- colMeans(this_lambdas, na.rm = TRUE)
@@ -104,12 +108,13 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   return(trend)
 }
 
+# function for boostrapping the create_lpi function for each lambda, and generating a 95 % confidence interval
 run_each_group <- function(lambda_files, random_trend){
 
   # Bootstrap these to get confidence intervals
   dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
-  # Construct dataframe and get 95% intervals
+  # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
   boot_res$Year <- random_trend$Year[1:(nrow(random_trend))]
   boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.95), na.rm = TRUE) 
@@ -117,6 +122,7 @@ run_each_group <- function(lambda_files, random_trend){
   return(boot_res)
 }
 
+ # run the boostrapping of trends for each lambda, and adjust for the random of that language
 lpi_trends_adjusted <- list()
 bound_trends <- list()
 for(i in 1:length(all_lambdas)){
@@ -125,12 +131,16 @@ for(i in 1:length(all_lambdas)){
     mutate(language = random_trend[[j]]$language)
   
   }
+  
+  # bind together the trends for that language
   bound_trends[[i]] <- rbindlist(lpi_trends_adjusted) %>%
     mutate(taxa = classes[i])
 }
 
+# bind together the trend for all languages
 fin_bound_trends <- rbindlist(bound_trends)
 
+# plot all the class level trends
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
