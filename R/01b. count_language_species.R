@@ -15,22 +15,41 @@ languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "
 classes <- c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia")
 
 # function for counting the number of species in each class/language grouping
-count_total_species <- function(data_file){
+count_total_species <- function(data_file, all_languages){
+  
+  if(all_languages == TRUE){
+    data_fin <- data_file %>%
+      select(q_wikidata) %>%
+      unique()
+    #print(data_fin)
+  }
+  if(all_languages == FALSE){
   data_fin <- data_file %>%
     select(article) %>%
     unique() %>%
     tally()
+  }
   return(data_fin)
 }
 
 # build dataframe with number of species for each grouping and rename columns (maintains order of languages/classes)
-run_count_total <- function(data_file, languages, classes){
+run_count_total <- function(data_file, languages, classes, all_languages){
   total_species <- list()
+  all_language_species <- c()
   for(i in 1:length(data_file)){
-    total_species[[i]] <- lapply(data_file[[i]], count_total_species) %>% 
-      data.frame()
+    if(all_languages == FALSE){
+      total_species[[i]] <- lapply(data_file[[i]], count_total_species, all_languages) %>% 
+        data.frame()
+    }
+    
+    if(all_languages == TRUE){
+      all_language_species[i] <- lapply(data_file[[i]], count_total_species, all_languages) %>% print()
+        unique()
+    }
+    
   }
-
+  total_species <- all_language_species %>% unique() %>% length()
+  print(total_species)
   # bind together, assign the columns to the list and return 
   total_species <- rbindlist(total_species)
   colnames(total_species) <- classes
@@ -39,10 +58,11 @@ run_count_total <- function(data_file, languages, classes){
 }
 
 ## plot number of species for each language, with separate factor order on the x axis - slice for each language
+# to update for those with complete time series
 ind_species_plot <- list()
 step <- 6
 for(i in 1:length(languages)){
-  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes) %>%
+  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes, all_languages = FALSE) %>%
     reshape2::melt(id  = "language") %>%
     arrange(language) %>%
     group_by(language) %>%
@@ -88,7 +108,7 @@ combine_plots <- function(plot_list){
 total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)}
 
 ## plot number of species in each class
-total_species <- run_count_total(total_monthly_views, languages, classes) %>%
+total_species <- run_count_total(total_monthly_views, languages, classes, all_languages = TRUE) %>% View()
   reshape2::melt(id  = "language") %>% 
   group_by(variable) %>%
   summarise(total = sum(value)) %>%
