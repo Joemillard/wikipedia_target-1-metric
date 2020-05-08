@@ -15,41 +15,23 @@ languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "
 classes <- c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia")
 
 # function for counting the number of species in each class/language grouping
-count_total_species <- function(data_file, all_languages){
-  
-  if(all_languages == TRUE){
-    data_fin <- data_file %>%
-      select(q_wikidata) %>%
-      unique()
-    #print(data_fin)
-  }
-  if(all_languages == FALSE){
+count_language_species <- function(data_file){
   data_fin <- data_file %>%
     select(article) %>%
     unique() %>%
     tally()
-  }
   return(data_fin)
 }
 
 # build dataframe with number of species for each grouping and rename columns (maintains order of languages/classes)
-run_count_total <- function(data_file, languages, classes, all_languages){
+run_count_total <- function(data_file, languages, classes){
   total_species <- list()
   all_language_species <- c()
   for(i in 1:length(data_file)){
-    if(all_languages == FALSE){
-      total_species[[i]] <- lapply(data_file[[i]], count_total_species, all_languages) %>% 
+      total_species[[i]] <- lapply(data_file[[i]], count_language_species) %>% 
         data.frame()
-    }
-    
-    if(all_languages == TRUE){
-      all_language_species[i] <- lapply(data_file[[i]], count_total_species, all_languages) %>% print()
-        unique()
-    }
-    
   }
-  total_species <- all_language_species %>% unique() %>% length()
-  print(total_species)
+  
   # bind together, assign the columns to the list and return 
   total_species <- rbindlist(total_species)
   colnames(total_species) <- classes
@@ -62,7 +44,7 @@ run_count_total <- function(data_file, languages, classes, all_languages){
 ind_species_plot <- list()
 step <- 6
 for(i in 1:length(languages)){
-  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes, all_languages = FALSE) %>%
+  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes) %>%
     reshape2::melt(id  = "language") %>%
     arrange(language) %>%
     group_by(language) %>%
@@ -107,23 +89,33 @@ combine_plots <- function(plot_list){
 # run the function to combine all plots, and add the column layout
 total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)}
 
-## plot number of species in each class
-total_species <- run_count_total(total_monthly_views, languages, classes, all_languages = TRUE) %>% View()
-  reshape2::melt(id  = "language") %>% 
-  group_by(variable) %>%
-  summarise(total = sum(value)) %>%
-  ungroup() %>%
-  mutate(variable = fct_reorder(variable, -total)) %>%
+# assign a class column for each subset and collapse all lists to single dataframe
+class_views <- list()
+for(i in 1:length(total_monthly_views)){
+  for(j in 1:length(total_monthly_views[[i]])){
+    total_monthly_views[[i]][[j]]$class <- classes[j]
+  }
+  class_views[[i]] <- rbindlist(total_monthly_views[[i]])
+}
+
+# tally the number of species in each class and plot
+class_views_plot <- rbindlist(class_views) %>%
+  select(q_wikidata, class) %>%
+  unique() %>%
+  group_by(class) %>%
+  tally() %>%
+  mutate(class = fct_reorder(class, -n)) %>%
   ggplot() +
-    geom_bar(aes(x = variable, y = total), stat = "identity") +
-    scale_y_continuous(expand = c(0, 0), limits = c(0, 50000)) +
+    geom_bar(aes(x = class, y = n), stat = "identity") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, 15000)) +
     xlab("") +
     ylab("Total species") +
     theme_bw() +
     theme(panel.grid.minor = element_blank(), 
           axis.title.y = element_text(size = 13))
 
-total_species_language <- total_species + total_species_plot + plot_layout(ncol = 1)
+# combine the plots for the number of species in each class and the number of species in each language
+total_species_language <- class_views_plot + total_species_plot + plot_layout(ncol = 1)
 
 # save the combined plot
 ggsave("outputs/total_language_species.png", scale = 1.3, dpi = 350)
@@ -150,7 +142,7 @@ for(i in 1:length(total_months)){
     counter <- 0 # set up the counter
     total_number <- length(total_months[[i]][[j]]$n) # calculate number of species for that class, and count through each species
     for(k in 1:length(total_months[[i]][[j]]$n)){
-      if(total_months[[i]][[j]]$n[k] > 29){
+      if(total_months[[i]][[j]]$n[k] == 57){
         counter <- counter + 1 # if complete series, add one to counter
       }
     }
