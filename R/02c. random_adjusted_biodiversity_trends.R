@@ -14,7 +14,6 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
-#languages_sorted <- sort(c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_"))
 
 # read in the lambda files 
 random_trend <- readRDS("overall_10-random-languages.rds")
@@ -42,7 +41,7 @@ rbindlist(random_trend) %>%
   theme_bw()
 
 # string for pollinating classes
-classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -133,12 +132,11 @@ fin_bound_trends <- rbindlist(bound_trends)
 
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
-  #filter(language == "\\^en_") %>%
   ggplot() +
-    geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = taxa), alpha = 0.3) +
-    geom_line(aes(x = Year, y = LPI, colour = taxa)) +
+    geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
+    geom_line(aes(x = Year, y = LPI, colour = language)) +
     geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-    facet_wrap(~language) +
+    facet_wrap(~taxa) +
     theme_bw()
   
 
