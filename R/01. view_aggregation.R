@@ -93,7 +93,7 @@ plot_views <- group_views(language_views_edit) %>%
     theme(panel.grid = element_blank())
 
 # save the plot
-ggsave("outputs/all_views_languages.png", dpi = 350, scale = 1)
+ggsave("outputs/species_views_languages.png", dpi = 350, scale = 1)
 
 ## script to calculate total monthly views and write to rds
 # filter NAs from timestamp
