@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(lme4)
 library(boot)
+library(RColorBrewer)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -106,7 +107,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
 
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 100)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
   # Construct dataframe and get 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -136,8 +137,12 @@ fin_bound_trends %>%
     geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
     geom_line(aes(x = Year, y = LPI, colour = language)) +
     geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+    scale_fill_brewer(palette="Paired") +
+    scale_colour_brewer(palette="Paired") +
     facet_wrap(~taxa) +
+    ylab("SAI") +
+    xlab(NULL) +
     theme_bw()
   
-
+ggsave("random_adjusted_class_SAI.png", scale = 1.3, dpi = 350)
 
