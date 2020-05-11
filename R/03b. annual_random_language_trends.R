@@ -38,11 +38,20 @@ reformat_annual <- function(data_file) {
   return(data_fin)
 }
 
+# count number of articles in each random grouping
+count_articles <- function(data_file){
+  data_file %>% 
+    select(q_wikidata) %>%
+    unique() %>%
+    tally() %>%
+    print()
+}
+
 ## format for the lpi function
 # select complete time series (57 months), calculate the annual total views, and rescale each dataframe to start at 1970 for lpi
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views
-iucn_views_poll <- lapply(total_monthly_views, select_comp)
+iucn_views_poll <- lapply(total_monthly_views, select_comp) # format for lpi
 iucn_views_poll <- lapply(iucn_views_poll, sum_annual) # select time series length
 iucn_views_poll <- lapply(iucn_views_poll, reformat_annual) # format for lpi
 
