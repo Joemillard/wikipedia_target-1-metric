@@ -35,12 +35,12 @@ for(i in 1:length(random_trend)){
 }
 
 # bind together and plot the random trends
-#rbindlist(random_trend) %>%
-#  ggplot() +
-#  geom_line(aes(x = Year, y = LPI_final, group = language)) +
- # geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-#  facet_wrap(~language) +
-#  theme_bw()
+rbindlist(random_trend) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI_final, group = language)) +
+  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  facet_wrap(~language) +
+  theme_bw()
 
 # string for pollinating classes, plus random
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
