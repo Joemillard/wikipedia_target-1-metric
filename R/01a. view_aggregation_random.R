@@ -119,15 +119,26 @@ NA_timestamp <- function(data_file){
   return(data_fin)
 }
 
-# filter NA rows (timestamps) from each set of views 
+# count number of articles in each random grouping
+count_articles <- function(data_file){
+  data_file %>% 
+    select(q_wikidata) %>%
+    unique() %>%
+    tally() %>%
+    print()
+}
+
+# filter NA rows (timestamps) from each set of views and count new number of articles in each grouping
 language_views_monthly <- list()
 for(i in 1:length(language_views)){
   language_views_monthly[[i]] <- lapply(language_views[[i]], NA_timestamp)
+  lapply(language_views_monthly[[i]], count_articles)
 }
 
-# calculate total monthly views for each set of views
+# calculate total monthly views for each set of views and count new number of articles in each grouping
 for(i in 1:length(language_views_monthly)){
   language_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
+  lapply(language_views_monthly[[i]], count_articles)
 }
 
 # add names for languages and class to each element of the list
@@ -142,8 +153,9 @@ for(i in 1:length(language_views_monthly)){
   language_views_monthly_bound[[i]] <- rbindlist(language_views_monthly[[i]])
   print(nrow(language_views_monthly_bound[[i]]))
   language_views_monthly_bound[[i]] %>% 
-    unique() %>% 
-    nrow() %>% 
+    select(q_wikidata) %>% 
+    unique() %>%
+    tally() %>% 
     print()
 }
 
