@@ -5,6 +5,8 @@ library(ggplot2)
 library(lme4)
 library(boot)
 library(RColorBrewer)
+library(viridis)
+library(forcats)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -149,10 +151,60 @@ fin_bound_trends %>%
     geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
     scale_fill_brewer(palette="Paired") +
     scale_colour_brewer(palette="Paired") +
-    facet_wrap(~taxa) +
+    facet_wrap(~taxa, scales = "free_y") +
     ylab("SAI") +
     xlab(NULL) +
     theme_bw()
   
-ggsave("random_adjusted_class_SAI.png", scale = 1.3, dpi = 350)
+ggsave("random_adjusted_class_SAI_free.png", scale = 1.3, dpi = 350)
+
+# figure for overall changes of different groupings
+# first calculate average lambda for each series
+language_decrease <- fin_bound_trends %>%
+  group_by(language, taxa) %>%
+  mutate(lambda = c(0, diff(log10(LPI)))) %>%
+  summarise(average_lambda = mean(lambda)) %>%
+  ungroup() %>% 
+  filter(taxa != "random") %>%
+  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+  group_by(language) %>%
+  count(factor_rate) %>% 
+  filter(factor_rate == "decreasing") %>%
+  select(language, n)
+
+taxa_decrease <- fin_bound_trends %>%
+  group_by(language, taxa) %>%
+  mutate(lambda = c(0, diff(log10(LPI)))) %>%
+  summarise(average_lambda = mean(lambda)) %>%
+  ungroup() %>% 
+  filter(taxa != "random") %>%
+  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+  group_by(taxa) %>%
+  count(factor_rate) %>% 
+  filter(factor_rate == "decreasing") %>%
+  select(taxa, n)
+
+fin_bound_trends %>%
+  group_by(language, taxa) %>%
+  mutate(lambda = c(0, diff(log10(LPI)))) %>%
+  summarise(average_lambda = mean(lambda)) %>%
+  ungroup() %>% 
+  filter(taxa != "random") %>%
+  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>%  
+  merge(language_decrease, by = "language") %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
+  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
+                       labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
+                          labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
+  ggplot() +
+    geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
+    scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
+    theme_bw() +
+    theme(panel.grid = element_blank(), 
+          axis.ticks = element_blank(), 
+          axis.title = element_blank(), 
+          panel.border = element_blank()) 
+
+ggsave("average_rate_of_change.png", scale = 1, dpi = 350)
 
