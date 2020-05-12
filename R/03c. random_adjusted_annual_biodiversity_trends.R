@@ -149,10 +149,10 @@ fin_bound_trends %>%
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_brewer(palette="Paired") +
   scale_colour_brewer(palette="Paired") +
-  facet_wrap(~taxa) +
+  facet_wrap(~taxa, scales = "free_y") +
   ylab("SAI") +
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_annual_adjusted_class_SAI.png", scale = 1.3, dpi = 350)
+ggsave("random_annual_adjusted_class_SAI_free.png", scale = 1.3, dpi = 350)
 
