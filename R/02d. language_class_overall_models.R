@@ -11,7 +11,7 @@ source("R/00. functions.R")
 # read in the random rds file
 directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
 
-# read in the string of languages - original order sorted alphabetically for files read in
+# read in the string of languages - original order sorted alphabetically for files read in - CHECK THAT THIS SHOULD BE SORTED
 languages <- sort(c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_"))
 
 # read in the lambda files 
