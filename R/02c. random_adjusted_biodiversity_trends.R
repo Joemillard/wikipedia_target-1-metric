@@ -186,20 +186,25 @@ taxa_decrease <- fin_bound_trends %>%
 
 fin_bound_trends %>%
   group_by(language, taxa) %>%
-  mutate(lambda = c(0, diff(log10(LPI)))) %>%
-  summarise(average_lambda = mean(lambda)) %>%
+  mutate(lambda = c(0, diff(log10(LPI)))) %>% 
+  filter(lambda != 0) %>%
+  mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
+  mutate(mean_lambda = mean(lambda)) %>%
   ungroup() %>% 
-  filter(taxa != "random") %>%
-  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>%  
-  merge(language_decrease, by = "language") %>%
+  select(mean_lambda, taxa, language, conf_diff) %>%
+  unique() %>%
+  filter(taxa != "random") %>% 
+  mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>%
+  mutate(factor_conf = factor(ifelse(conf_diff < 0.9, "high", "low"))) %>% 
+  
   mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
   mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
                        labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
   mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
                           labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
   ggplot() +
-    geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
-    scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
+    geom_tile(aes(x = language, y = taxa, fill = atan(mean_lambda/conf_diff), alpha=conf_diff+mean_lambda), colour = "white", size = 1.2) +
+    scale_fill_viridis("Rate of change", discrete = FALSE, option = "viridis", direction = -1) +
     theme_bw() +
     theme(panel.grid = element_blank(), 
           axis.ticks = element_blank(), 
@@ -208,3 +213,54 @@ fin_bound_trends %>%
 
 ggsave("average_rate_of_change.png", scale = 1, dpi = 350)
 
+
+fin_bound_trends %>%
+  group_by(language, taxa) %>%
+  mutate(lambda = c(0, diff(log10(LPI)))) %>% 
+  filter(lambda != 0) %>%
+  mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
+  mutate(mean_lambda = mean(lambda)) %>%
+  ungroup() %>% 
+  select(mean_lambda, taxa, language, conf_diff) %>%
+  unique() %>%
+  filter(taxa != "random") %>% 
+  mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>%
+  mutate(factor_conf = factor(ifelse(conf_diff < 0.9, "high", "low"))) %>% 
+  
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
+  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
+                       labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
+                           labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
+  ggplot() +
+  geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
+  scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.title = element_blank(), 
+        panel.border = element_blank()) 
+
+
+
+d<-expand.grid(x=1:3,y=1:3)
+#dlabel<-data.frame(x=1:3,xlabel=c("X low", "X middle","X High"))
+d<-merge(d,data.frame(x=1:3,xlabel=c("X low", "X middle","X high")),by="x")
+d<-merge(d,data.frame(y=1:3,ylabel=c("Y low", "Y middle","Y high")),by="y")
+
+g.legend<-
+  ggplot(d, aes(x,y,fill=atan(y/x),alpha=x+y,label=paste0(xlabel,"\n",ylabel)))+
+  geom_tile()+
+  geom_text(alpha=1)+
+  scale_fill_viridis()+
+  theme_void()+
+  theme(legend.position="none",
+        panel.background=element_blank(),
+        plot.margin=margin(t=10,b=10,l=10))+
+  labs(title="A bivariate color scheme (Viridis)",x="X",y="Y")+
+  theme(axis.title=element_text(color="black"))+
+  # Draw some arrows:
+  geom_segment(aes(x=1, xend = 3 , y=0, yend = 0), size=1.5,
+               arrow = arrow(length = unit(0.6,"cm"))) +
+  geom_segment(aes(x=0, xend = 0 , y=1, yend = 3), size=1.5,
+               arrow = arrow(length = unit(0.6,"cm"))) 
