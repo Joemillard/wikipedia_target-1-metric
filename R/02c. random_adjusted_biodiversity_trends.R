@@ -7,6 +7,7 @@ library(boot)
 library(RColorBrewer)
 library(viridis)
 library(forcats)
+library(cowplot)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -196,15 +197,14 @@ fin_bound_trends %>%
   filter(taxa != "random") %>% 
   mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>%
   mutate(factor_conf = factor(ifelse(conf_diff < 0.9, "high", "low"))) %>% 
-  
   mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
   mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
                        labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
   mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
                           labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
   ggplot() +
-    geom_tile(aes(x = language, y = taxa, fill = atan(mean_lambda/conf_diff), alpha=conf_diff+mean_lambda), colour = "white", size = 1.2) +
-    scale_fill_viridis("Rate of change", discrete = FALSE, option = "viridis", direction = -1) +
+    geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
+    scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
     theme_bw() +
     theme(panel.grid = element_blank(), 
           axis.ticks = element_blank(), 
@@ -213,54 +213,66 @@ fin_bound_trends %>%
 
 ggsave("average_rate_of_change.png", scale = 1, dpi = 350)
 
-
-fin_bound_trends %>%
+# build plot for language and certainty 
+rate_plot <- fin_bound_trends %>%
   group_by(language, taxa) %>%
   mutate(lambda = c(0, diff(log10(LPI)))) %>% 
   filter(lambda != 0) %>%
   mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
   mutate(mean_lambda = mean(lambda)) %>%
-  ungroup() %>% 
+  ungroup() %>%
   select(mean_lambda, taxa, language, conf_diff) %>%
   unique() %>%
   filter(taxa != "random") %>% 
-  mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>%
-  mutate(factor_conf = factor(ifelse(conf_diff < 0.9, "high", "low"))) %>% 
-  
-  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
+  mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>% 
+  mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low"))) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increase", "Decrease"))) %>%
+  mutate(factor_conf = factor(factor_conf, levels = c("low", "high"), labels = c("Low",  "High"))) %>%
+  mutate(alpha_val = as.numeric(factor_conf)) %>%
   mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
                        labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
   mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
                            labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
   ggplot() +
-  geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
-  scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
+  geom_tile(aes(x = language, y = taxa, fill = factor_rate, alpha = alpha_val), colour = "white", size = 1.5) +
+  scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
+  scale_alpha(range = c(0.5, 1)) +
   theme_bw() +
   theme(panel.grid = element_blank(), 
         axis.ticks = element_blank(), 
-        axis.title = element_blank(), 
-        panel.border = element_blank()) 
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.border = element_blank(),
+        legend.position = "none") 
 
+# build dataframe for setting out the legend
+d <- expand.grid(x=1:2,y=1:2)
+d <- merge(d,data.frame(x=1:2,xlabel=c("X low", "X high")),by="x")
+d <- merge(d,data.frame(y=1:2,ylabel=c("Y low", "Y high")),by="y")
+d$alpha_val <- d$x
 
-
-d<-expand.grid(x=1:3,y=1:3)
-#dlabel<-data.frame(x=1:3,xlabel=c("X low", "X middle","X High"))
-d<-merge(d,data.frame(x=1:3,xlabel=c("X low", "X middle","X high")),by="x")
-d<-merge(d,data.frame(y=1:3,ylabel=c("Y low", "Y middle","Y high")),by="y")
-
-g.legend<-
-  ggplot(d, aes(x,y,fill=atan(y/x),alpha=x+y,label=paste0(xlabel,"\n",ylabel)))+
-  geom_tile()+
-  geom_text(alpha=1)+
-  scale_fill_viridis()+
-  theme_void()+
+# build the legend with the appropriate colours for change and certainty
+g.legend <- ggplot(d, aes(x,y,fill=ylabel, alpha = alpha_val))+
+  geom_tile() +
+  scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
+  scale_alpha(range = c(0.5, 1)) +
+  scale_x_continuous(breaks = c(1, 2), labels = c("Low", "High")) +
+  geom_segment(aes(x=0.3, xend = 0.3, y = 1.4, yend = 0.6 ), arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
+  geom_segment(aes(x=0.3, xend = 0.3, y = 1.6, yend = 2.4), arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
+  theme_void() +
   theme(legend.position="none",
         panel.background=element_blank(),
-        plot.margin=margin(t=10,b=10,l=10))+
-  labs(title="A bivariate color scheme (Viridis)",x="X",y="Y")+
-  theme(axis.title=element_text(color="black"))+
-  # Draw some arrows:
-  geom_segment(aes(x=1, xend = 3 , y=0, yend = 0), size=1.5,
-               arrow = arrow(length = unit(0.6,"cm"))) +
-  geom_segment(aes(x=0, xend = 0 , y=1, yend = 3), size=1.5,
-               arrow = arrow(length = unit(0.6,"cm"))) 
+        plot.margin=margin(t=10,b=10,l=10),
+        axis.title.y = element_text(angle = 90),
+        axis.title.x = element_text(hjust = 0.6, vjust = -0.8),
+        axis.text.x = element_text()) +
+  labs(title=NULL,x= "Certainty", y = "Change") +
+  theme(axis.title=element_text(color="black"))
+
+ # combine the plot and the legend
+ggdraw() +
+  draw_plot(rate_plot, -0.13, width = 1, height = 1, scale = 0.75) +
+  draw_plot(g.legend, width = 0.2, height = 0.3, scale = 0.95, hjust = -3.65, vjust = -1.96)
+
+ # save the plot with legend and plot combined for change and certainty
+ggsave("average_change_uncertainty.png", scale = 1.1, dpi = 400)
