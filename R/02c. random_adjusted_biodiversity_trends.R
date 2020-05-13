@@ -161,57 +161,58 @@ ggsave("random_adjusted_class_SAI_free.png", scale = 1.3, dpi = 350)
 
 # figure for overall changes of different groupings
 # first calculate average lambda for each series
-language_decrease <- fin_bound_trends %>%
+language_frame <- fin_bound_trends %>%
   group_by(language, taxa) %>%
   mutate(lambda = c(0, diff(log10(LPI)))) %>%
-  summarise(average_lambda = mean(lambda)) %>%
-  ungroup() %>% 
-  filter(taxa != "random") %>%
-  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
-  group_by(language) %>%
-  count(factor_rate) %>% 
-  filter(factor_rate == "decreasing") %>%
-  select(language, n)
-
-taxa_decrease <- fin_bound_trends %>%
-  group_by(language, taxa) %>%
-  mutate(lambda = c(0, diff(log10(LPI)))) %>%
-  summarise(average_lambda = mean(lambda)) %>%
-  ungroup() %>% 
-  filter(taxa != "random") %>%
-  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
-  group_by(taxa) %>%
-  count(factor_rate) %>% 
-  filter(factor_rate == "decreasing") %>%
-  select(taxa, n)
-
-fin_bound_trends %>%
-  group_by(language, taxa) %>%
-  mutate(lambda = c(0, diff(log10(LPI)))) %>% 
-  filter(lambda != 0) %>%
   mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
-  mutate(mean_lambda = mean(lambda)) %>%
+  mutate(average_lambda = mean(lambda)) %>% 
   ungroup() %>% 
-  select(mean_lambda, taxa, language, conf_diff) %>%
+  filter(taxa != "random") %>%
+  select(language, taxa, conf_diff, average_lambda) %>%
   unique() %>%
-  filter(taxa != "random") %>% 
-  mutate(factor_rate = factor(ifelse(mean_lambda > 0, "increasing", "decreasing"))) %>%
-  mutate(factor_conf = factor(ifelse(conf_diff < 0.9, "high", "low"))) %>% 
-  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increasing", "Decreasing"))) %>%
-  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
-                       labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
-  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
-                          labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
-  ggplot() +
-    geom_tile(aes(x = language, y = taxa, fill = factor_rate), colour = "white", size = 1.2) +
-    scale_fill_viridis("Rate of change", discrete = TRUE, option = "viridis", direction = -1) +
-    theme_bw() +
-    theme(panel.grid = element_blank(), 
-          axis.ticks = element_blank(), 
-          axis.title = element_blank(), 
-          panel.border = element_blank()) 
+  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+  mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low")))
 
-ggsave("average_rate_of_change.png", scale = 1, dpi = 350)
+sort_rate_lang <- language_frame %>%
+  group_by(language) %>%
+  count(factor_rate) %>%
+  ungroup() %>%
+  filter(factor_rate == "decreasing") %>%
+  select(language, n) %>% 
+  arrange(desc(n)) 
+  
+sort_conf_lang <- language_frame %>%
+  group_by(language) %>%
+  count(factor_conf) %>%
+  ungroup()  %>%
+  filter(factor_conf == "low") %>%
+  select(language, n) %>%
+  add_row(language = "\\^en_", n = 0) %>%
+  arrange(n)
+
+joined_order_lang <- inner_join(sort_rate_lang, sort_conf_lang, by = "language") %>%
+  arrange(desc(n.x), n.y)  %>% 
+  mutate(language = factor(language, levels = language)) %>% pull(language)
+
+sort_rate_taxa <- language_frame %>%
+  group_by(taxa) %>%
+  count(factor_rate) %>%
+  filter(factor_rate == "decreasing") %>%
+  select(taxa, n) %>%
+  arrange(desc(n)) %>%
+  ungroup()
+
+sort_conf_taxa <- language_frame %>%
+  group_by(taxa) %>%
+  count(factor_conf) %>%
+  filter(factor_conf == "low") %>%
+  select(taxa, n) %>%
+  arrange(n) %>%
+  ungroup()
+
+joined_order_taxa <- inner_join(sort_rate_taxa, sort_conf_taxa, by = "taxa") %>%
+  arrange(desc(n.x), n.y)  %>% 
+  mutate(taxa = factor(taxa, levels = taxa)) %>% pull(taxa)
 
 # build plot for language and certainty 
 rate_plot <- fin_bound_trends %>%
@@ -229,10 +230,11 @@ rate_plot <- fin_bound_trends %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increase", "Decrease"))) %>%
   mutate(factor_conf = factor(factor_conf, levels = c("low", "high"), labels = c("Low",  "High"))) %>%
   mutate(alpha_val = as.numeric(factor_conf)) %>%
-  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"), 
+  mutate(taxa = factor(taxa, levels = joined_order_taxa, 
                        labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
-  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^de_", "\\^en_", "\\^es_", "\\^ja_", "\\^it_", "\\^ru_", "\\^pt_"),
-                           labels = c("Arabic", "French", "Chinese", "German", "English", "Spanish", "Japanese", "Italian",  "Russian", "Portuguese"))) %>%
+  mutate(language = factor(language, levels = joined_order_lang,
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  mutate(plot_order = (as.numeric(factor_rate) + as.numeric(factor_conf))) %>%
   ggplot() +
   geom_tile(aes(x = language, y = taxa, fill = factor_rate, alpha = alpha_val), colour = "white", size = 1.5) +
   scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
@@ -269,10 +271,10 @@ g.legend <- ggplot(d, aes(x,y,fill=ylabel, alpha = alpha_val))+
   labs(title=NULL,x= "Certainty", y = "Change") +
   theme(axis.title=element_text(color="black"))
 
- # combine the plot and the legend
+# combine the plot and the legend
 ggdraw() +
   draw_plot(rate_plot, -0.13, width = 1, height = 1, scale = 0.75) +
   draw_plot(g.legend, width = 0.2, height = 0.3, scale = 0.95, hjust = -3.65, vjust = -1.96)
 
- # save the plot with legend and plot combined for change and certainty
+# save the plot with legend and plot combined for change and certainty
 ggsave("average_change_uncertainty.png", scale = 1.1, dpi = 400)
