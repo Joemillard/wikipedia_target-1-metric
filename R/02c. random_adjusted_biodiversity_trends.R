@@ -255,7 +255,7 @@ d$alpha_val <- d$x
 
 # build the legend with the appropriate colours for change and certainty
 g.legend <- ggplot(d, aes(x,y,fill=ylabel, alpha = alpha_val))+
-  geom_tile() +
+  geom_tile(colour = "white", size = 1.5) +
   scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
   scale_alpha(range = c(0.5, 1)) +
   scale_x_continuous(breaks = c(1, 2), labels = c("Low", "High")) +
