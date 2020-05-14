@@ -173,27 +173,29 @@ language_frame <- fin_bound_trends %>%
   mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
   mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low")))
 
+# calculate number of factors for rates and confidence for each language
 sort_rate_lang <- language_frame %>%
   group_by(language) %>%
   count(factor_rate) %>%
   ungroup() %>%
   filter(factor_rate == "decreasing") %>%
-  select(language, n) %>% 
-  arrange(desc(n)) 
-  
+  select(language, n)
+
+# add en at the bottom for engligh with no low confidence groupings
 sort_conf_lang <- language_frame %>%
   group_by(language) %>%
   count(factor_conf) %>%
   ungroup()  %>%
   filter(factor_conf == "low") %>%
   select(language, n) %>%
-  add_row(language = "\\^en_", n = 0) %>%
-  arrange(n)
+  add_row(language = "\\^en_", n = 0)
 
+# join together number of factors and sort on rate and confidence
 joined_order_lang <- inner_join(sort_rate_lang, sort_conf_lang, by = "language") %>%
   arrange(desc(n.x), n.y)  %>% 
   mutate(language = factor(language, levels = language)) %>% pull(language)
 
+# calculate number of factors for rates and confidence for each taxa
 sort_rate_taxa <- language_frame %>%
   group_by(taxa) %>%
   count(factor_rate) %>%
@@ -210,6 +212,7 @@ sort_conf_taxa <- language_frame %>%
   arrange(n) %>%
   ungroup()
 
+# join together number of factors and sort on rate and confidence
 joined_order_taxa <- inner_join(sort_rate_taxa, sort_conf_taxa, by = "taxa") %>%
   arrange(desc(n.x), n.y)  %>% 
   mutate(taxa = factor(taxa, levels = taxa)) %>% pull(taxa)
