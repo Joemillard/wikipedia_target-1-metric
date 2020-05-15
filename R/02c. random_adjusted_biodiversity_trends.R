@@ -115,7 +115,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
 
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 100)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -187,8 +187,8 @@ sort_conf_lang <- language_frame %>%
   count(factor_conf) %>%
   ungroup()  %>%
   filter(factor_conf == "low") %>%
-  select(language, n) %>%
-  add_row(language = "\\^en_", n = 0)
+  select(language, n) #%>%
+  #add_row(language = "\\^en_", n = 0)
 
 # join together number of factors and sort on rate and confidence
 joined_order_lang <- inner_join(sort_rate_lang, sort_conf_lang, by = "language") %>%
@@ -236,9 +236,10 @@ rate_plot <- fin_bound_trends %>%
   mutate(taxa = factor(taxa, levels = joined_order_taxa, 
                        labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
   mutate(language = factor(language, levels = joined_order_lang,
-                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Russian", "Portuguese"))) %>%
   mutate(plot_order = (as.numeric(factor_rate) + as.numeric(factor_conf))) %>%
   ggplot() +
+  ggtitle("Total monthly view trends") +
   geom_tile(aes(x = language, y = taxa, fill = factor_rate, alpha = alpha_val), colour = "white", size = 1.5) +
   scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
   scale_alpha(range = c(0.5, 1)) +
@@ -280,4 +281,4 @@ ggdraw() +
   draw_plot(g.legend, width = 0.2, height = 0.3, scale = 0.95, hjust = -3.65, vjust = -1.96)
 
 # save the plot with legend and plot combined for change and certainty
-ggsave("average_change_uncertainty.png", scale = 1.1, dpi = 400)
+ggsave("average_change_uncertainty_comb.png", scale = 1.1, dpi = 400)

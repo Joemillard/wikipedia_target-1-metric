@@ -190,7 +190,7 @@ sort_conf_lang <- language_frame %>%
 
 # join together number of factors and sort on rate and confidence
 joined_order_lang <- inner_join(sort_rate_lang, sort_conf_lang, by = "language") %>%
-  arrange(desc(n.x), n.y)  %>% 
+  arrange(n.x, n.y)  %>% 
   mutate(language = factor(language, levels = language)) %>% pull(language)
 
 # calculate number of factors for rates and confidence for each taxa
@@ -212,7 +212,7 @@ sort_conf_taxa <- language_frame %>%
 
 # join together number of factors and sort on rate and confidence
 joined_order_taxa <- inner_join(sort_rate_taxa, sort_conf_taxa, by = "taxa") %>%
-  arrange(desc(n.x), n.y)  %>% 
+  arrange(desc(n.x), desc(n.y))  %>% 
   mutate(taxa = factor(taxa, levels = taxa)) %>% pull(taxa)
 
 # build plot for language and certainty 
@@ -231,12 +231,13 @@ rate_plot <- fin_bound_trends %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Increase", "Decrease"))) %>%
   mutate(factor_conf = factor(factor_conf, levels = c("low", "high"), labels = c("Low",  "High"))) %>%
   mutate(alpha_val = as.numeric(factor_conf)) %>%
-  #mutate(taxa = factor(taxa, levels = joined_order_taxa, 
-  #                     labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
-  #mutate(language = factor(language, levels = joined_order_lang,
-  #                         labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  mutate(taxa = factor(taxa, levels = joined_order_taxa,
+                       labels = c("Mammalia", "Insecta", "Reptilia", "Amphibia", "Actinopterygii", "Aves"))) %>% 
+  mutate(language = factor(language, levels = joined_order_lang,
+                          labels = c("German", "English", "Spanish", "Portuguese", "Russian", "French", "Italian", "Chinese", "Japanese", "Arabic"))) %>%
   mutate(plot_order = (as.numeric(factor_rate) + as.numeric(factor_conf))) %>%
   ggplot() +
+  ggtitle("Total annual view trends") +
   geom_tile(aes(x = language, y = taxa, fill = factor_rate, alpha = alpha_val), colour = "white", size = 1.5) +
   scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
   scale_alpha(range = c(0.5, 1)) +
