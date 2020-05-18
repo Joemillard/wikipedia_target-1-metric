@@ -16,30 +16,44 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
 # read in the rds for total monthly views to retrieve the lambda ids
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
 
-## format for the lpi function
-# rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
-iucn_views_poll <- list()
-for(i in 1:length(total_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
-  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
-  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
-    data_fin <- x %>%
-      select(article, q_wikidata, dec_date, av_views) %>%
-      mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
-      filter(complete.cases(.)) %>%
-      select(q_wikidata, SpeciesSSet, article) %>%
-      unique() %>%
-      mutate(SpeciesSSet = as.character(SpeciesSSet))
-    return(data_fin)
-  })
-}
 
+
+# set up main vector of languages
+bound_trends <- list()
+languages_orig <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+for(l in 1:length(languages_orig)){
+
+  # for jack-knife, filter out some languages
+  ## format for the lpi function
+  # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
+  iucn_views_poll <- list()
+  for(i in 1:length(total_monthly_views)){
+    iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+    iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
+    iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
+      data_fin <- x %>%
+        select(article, q_wikidata, dec_date, av_views) %>%
+        mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
+        filter(complete.cases(.)) %>%
+        select(q_wikidata, SpeciesSSet, article) %>%
+        unique() %>%
+        mutate(SpeciesSSet = as.character(SpeciesSSet))
+      return(data_fin)
+    })
+  }
+
+  iucn_views_poll[[l]] <- NULL
+    
 # read in the string of languages and taxa - original order sorted alphabetically for files read in
-languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+languages <- languages_orig[-l]
+print(languages)
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
 random_trend <- readRDS("overall_10-random-languages.rds")
+
+# subset the random trend for the current languages
+random_trend[[l]] <- NULL
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -57,21 +71,21 @@ for(i in 1:length(random_trend)){
 }
 
 # bind together and plot the random trends
-rbindlist(random_trend) %>%
+print(rbindlist(random_trend) %>%
   ggplot() +
   geom_line(aes(x = Year, y = LPI_final, group = language)) +
   geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
   facet_wrap(~language) +
-  theme_bw()
+  theme_bw())
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
-view_directories <- function(classes, directory){
+view_directories <- function(classes, directory, language){
   
   # bring in all the files in that directory and assign to a list
   view_files <- list()
-  for(i in 1:length(languages)){
-    view_files[[i]] <- list.files(directory, pattern = languages[i])
+  for(i in 1:length(language)){
+    view_files[[i]] <- list.files(directory, pattern = language[i])
   }
   
   # unlist the files in the correct order
@@ -84,6 +98,7 @@ view_directories <- function(classes, directory){
   # set up each of the file directories and order consisten with the random overall trend
   for(i in 1:length(classes)){
     user_files[[i]] <- list.files(directory, pattern = classes[i])
+    user_files[[i]] <- intersect(file_order, user_files[[i]])
     user_files[[i]] <- user_files[[i]][order(match(user_files[[i]], file_order))]
     user_files_dir[[i]] <- paste0(directory, "/", user_files[[i]])
   }
@@ -94,7 +109,8 @@ view_directories <- function(classes, directory){
 
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes,
-                               directory)
+                               directory,
+                               languages)
 
 # read in all the files in groups for each language
 language_views <- list()
@@ -122,7 +138,8 @@ for(i in 1:length(all_lambdas)){
   for(j in 1:length(all_lambdas[[i]])){
     merge_lambda[[j]] <- inner_join(all_lambdas[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
       mutate(taxa = classes[i]) %>%
-      mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+      mutate(language = languages[j])
+    #print(head(merge_lambda[[j]]))# merge each set of lambda files with the q_wikidata and add columns for class and language
     print(nrow(all_lambdas[[i]][[j]]) - nrow(merge_lambda[[j]]))
   }
   merge_fin_lambda[[i]] <- merge_lambda
@@ -171,7 +188,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 10)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 5)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -187,18 +204,27 @@ for(i in 1:length(all_lambdas)){
     lpi_trends_adjusted[[i]] <- run_each_group(all_lambdas[[i]], random_trend[[1]]) %>%
       mutate(taxa = classes[i])
 }
-  
+
 # bind together the trends for that language
-bound_trends <- rbindlist(lpi_trends_adjusted)
+bound_trends[[l]] <- rbindlist(lpi_trends_adjusted)
+
+}
+
+for(i in 1:length(bound_trends)){
+  bound_trends[[i]] <- bound_trends[[i]] %>%
+    mutate(language_jack = languages_orig[i])
+}
 
 # plot all the class level trends
 bound_trends %>%
+  rbindlist() %>%
+  
   mutate(Year = as.numeric(Year)) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
-  geom_line(aes(x = Year, y = LPI)) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language_jack), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI, colour = language_jack)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_brewer(palette="Paired") +
   scale_colour_brewer(palette="Paired") +
