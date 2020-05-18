@@ -218,12 +218,15 @@ for(i in 1:length(bound_trends)){
 # plot all the class level trends
 bound_trends %>%
   rbindlist() %>%
-  
+  group_by(taxa, Year) %>%
+  mutate(av_index = mean(LPI)) %>%
+  ungroup() %>% 
   mutate(Year = as.numeric(Year)) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   ggplot() +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language_jack), alpha = 0.3) +
+  #geom_smooth(aes(x = Year, y = av_index), colour = "black", span = 0.3, fill = NA) +
   geom_line(aes(x = Year, y = LPI, colour = language_jack)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_brewer(palette="Paired") +
@@ -233,7 +236,7 @@ bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_all-class_SAI.png", scale = 1, dpi = 350)
+ggsave("random_adjusted_all-class_SAI_jack-knife.png", scale = 1.1, dpi = 350)
 
 
 
