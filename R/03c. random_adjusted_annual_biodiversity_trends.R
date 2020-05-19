@@ -113,13 +113,13 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 100)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
   boot_res$Year <- random_trend$Year[1:(nrow(random_trend))]
-  boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.95), na.rm = TRUE) 
-  boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.05), na.rm = TRUE)
+  boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.975), na.rm = TRUE) 
+  boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.025), na.rm = TRUE)
   return(boot_res)
 }
 
@@ -155,7 +155,7 @@ fin_bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_annual_adjusted_class_SAI_free.png", scale = 1.3, dpi = 350)
+ggsave("random_annual_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
 
 
 # figure for overall changes of different groupings
@@ -279,4 +279,4 @@ ggdraw() +
   draw_plot(g.legend, width = 0.2, height = 0.3, scale = 0.95, hjust = -3.65, vjust = -1.96)
 
 # save the plot with legend and plot combined for change and certainty
-ggsave("average_change_annual_uncertainty.png", scale = 1.1, dpi = 400)
+ggsave("average_change_annual_uncertainty_2.png", scale = 1.1, dpi = 400)
