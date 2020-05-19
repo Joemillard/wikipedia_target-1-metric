@@ -16,11 +16,10 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
 # read in the rds for total monthly views to retrieve the lambda ids
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
 
-
-
 # set up main vector of languages
 bound_trends <- list()
 languages_orig <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+system.time(
 for(l in 1:length(languages_orig)){
 
   # for jack-knife, filter out some languages
@@ -188,7 +187,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 5)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -209,7 +208,7 @@ for(i in 1:length(all_lambdas)){
 bound_trends[[l]] <- rbindlist(lpi_trends_adjusted)
 
 }
-
+)
 for(i in 1:length(bound_trends)){
   bound_trends[[i]] <- bound_trends[[i]] %>%
     mutate(language_jack = languages_orig[i])
@@ -236,7 +235,7 @@ bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_all-class_SAI_jack-knife.png", scale = 1.1, dpi = 350)
+ggsave("random_adjusted_all-class_SAI_jack-knife_1000.png", scale = 1.1, dpi = 350)
 
 
 
