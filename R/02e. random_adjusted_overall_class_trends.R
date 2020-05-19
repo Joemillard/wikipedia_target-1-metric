@@ -192,8 +192,8 @@ run_each_group <- function(lambda_files, random_trend){
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
   boot_res$Year <- random_trend$Year[1:(nrow(random_trend))]
-  boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.95), na.rm = TRUE) 
-  boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.05), na.rm = TRUE)
+  boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.975), na.rm = TRUE) 
+  boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.025), na.rm = TRUE)
   return(boot_res)
 }
 
@@ -235,7 +235,7 @@ bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_all-class_SAI_jack-knife_1000.png", scale = 1.1, dpi = 350)
+ggsave("random_adjusted_all-class_SAI_jack-knife_1000_95.png", scale = 1.1, dpi = 350)
 
 
 
