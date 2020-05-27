@@ -19,12 +19,12 @@ total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/
 # set up main vector of languages
 bound_trends <- list()
 languages_orig <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+
+# for jack-knife, filter out some languages
+## format for the lpi function
+# rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
 system.time(
 for(l in 1:length(languages_orig)){
-
-  # for jack-knife, filter out some languages
-  ## format for the lpi function
-  # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
   iucn_views_poll <- list()
   for(i in 1:length(total_monthly_views)){
     iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
