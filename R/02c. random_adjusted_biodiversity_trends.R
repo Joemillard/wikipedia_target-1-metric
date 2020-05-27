@@ -60,11 +60,11 @@ view_directories <- function(classes, directory){
   
   # unlist the files in the correct order
   file_order <- unlist(view_files)
-
+  
   # set up empty list for files for each language
   user_files_dir <- list()
   user_files <- list()
-
+  
   # set up each of the file directories and order consisten with the random overall trend
   for(i in 1:length(classes)){
     user_files[[i]] <- list.files(directory, pattern = classes[i])
@@ -113,9 +113,9 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 
 # function for boostrapping the create_lpi function for each lambda, and generating a 95 % confidence interval
 run_each_group <- function(lambda_files, random_trend){
-
+  
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 10)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -125,14 +125,14 @@ run_each_group <- function(lambda_files, random_trend){
   return(boot_res)
 }
 
- # run the boostrapping of trends for each lambda, and adjust for the random of that language
+# run the boostrapping of trends for each lambda, and adjust for the random of that language
 lpi_trends_adjusted <- list()
 bound_trends <- list()
 for(i in 1:length(all_lambdas)){
   for(j in 1:length(all_lambdas[[i]])){
-  lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trend[[j]]) %>%
-    mutate(language = random_trend[[j]]$language)
-  
+    lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trend[[j]]) %>%
+      mutate(language = random_trend[[j]]$language)
+    
   }
   
   # bind together the trends for that language
@@ -147,31 +147,48 @@ fin_bound_trends <- rbindlist(bound_trends)
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
-    geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
-    geom_line(aes(x = Year, y = LPI, colour = language)) +
-    geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-    scale_fill_brewer(palette="Paired") +
-    scale_colour_brewer(palette="Paired") +
-    facet_wrap(~taxa, scales = "free_y") +
-    ylab("SAI") +
-    xlab(NULL) +
-    theme_bw()
-  
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI, colour = language)) +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+  scale_fill_brewer(palette="Paired") +
+  scale_colour_brewer(palette="Paired") +
+  facet_wrap(~taxa, scales = "free_y") +
+  ylab("SAI") +
+  xlab(NULL) +
+  theme_bw()
+
 ggsave("random_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
 
+# convert series back to lambda, and then take sets varying the start date up by one
 # figure for overall changes of different groupings
 # first calculate average lambda for each series
-language_frame <- fin_bound_trends %>%
-  group_by(language, taxa) %>%
-  mutate(lambda = c(0, diff(log10(LPI)))) %>%
-  mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
-  mutate(average_lambda = mean(lambda)) %>% 
-  ungroup() %>% 
-  filter(taxa != "random") %>%
-  select(language, taxa, conf_diff, average_lambda) %>%
-  unique() %>%
-  mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
-  mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low")))
+language_frame <- list()
+for(i in 1:56){
+  language_frame[[i]] <- fin_bound_trends %>%
+    group_by(language, taxa) %>%
+    filter(row_number() %in% c(i:57)) %>%
+    mutate(lambda = c(0, diff(log10(LPI)))) %>%
+    mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
+    mutate(average_lambda = mean(lambda)) %>% 
+    ungroup() %>% 
+    filter(taxa != "random") %>%
+    select(language, taxa, conf_diff, average_lambda) %>%
+    unique() %>%
+    mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+    mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low"))) %>%
+    mutate(series_start = i)
+}
+
+# count the number increasing and decreasing time series for each taxa/language combination
+series_start_var <- rbindlist(language_frame) %>%
+  group_by(taxa, language) %>%
+  count(factor_rate) %>%
+  ungroup() %>%
+  arrange(taxa, language) %>%
+  reshape2::dcast(taxa + language ~ factor_rate)
+
+series_start_var[is.na(series_start_var)] <- 0
+series_start_var$change_diff <- series_start_var$increasing - series_start_var$decreasing
 
 # calculate number of factors for rates and confidence for each language
 sort_rate_lang <- language_frame %>%
