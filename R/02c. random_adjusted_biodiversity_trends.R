@@ -190,6 +190,11 @@ series_start_var <- rbindlist(language_frame) %>%
 series_start_var[is.na(series_start_var)] <- 0
 series_start_var$change_diff <- series_start_var$increasing - series_start_var$decreasing
 
+# count number increasing and decreasing
+series_start_var <- series_start_var %>%
+  mutate(up_down = ifelse(change_diff > 0, "increasing", "decreasing")) 
+
+
 # calculate number of factors for rates and confidence for each language
 sort_rate_lang <- language_frame %>%
   group_by(language) %>%
