@@ -1,3 +1,4 @@
+## need extra versin fo this script for the non jack-knifed version
 # read in required packages
 library(data.table)
 library(dplyr)
