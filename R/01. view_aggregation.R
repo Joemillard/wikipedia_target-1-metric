@@ -1,4 +1,5 @@
 ## script for counting the number of views in analysis, and write total monthly views to rds
+# **** check corrected for only pages with complete trends ****
 library(dplyr)
 library(data.table)
 library(forcats)

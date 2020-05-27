@@ -112,6 +112,7 @@ plot_views <- group_views(language_views) %>%
 ggsave("outputs/all_random-views_languages.png", dpi = 350, scale = 1)
 
 ## script to calculate total monthly views and write to rds
+# **** check corrected for only pages with complete trends ****
 # filter NAs from timestamp
 NA_timestamp <- function(data_file){
   data_fin <- data_file %>%
