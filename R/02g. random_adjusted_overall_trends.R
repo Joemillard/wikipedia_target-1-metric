@@ -165,11 +165,11 @@ reptiles <- 10200
 # calculate the total species, and then from that the weighting for each group
 total_number <- sum(reptiles, bids, mammals, amphibians, fishes, insects)
 weighting_val <- c(fishes/total_number, amphibians/total_number, birds/total_number, insects/total_number, mammals/total_number, reptiles/total_number)
-# weighting_val <- c(rep(0.2, 5)) # equal weighting
+weighting_val <- c(rep(1, 6)) # equal weighting
 
-for(i in 1:length(all_lambdas)) {
-  all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] <- all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] * weighting_val[i]
-}
+#for(i in 1:length(all_lambdas)) {
+ # all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] <- all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] * weighting_val[i]
+#}
 
 # and then bind back together for bootstrap over all values
 all_lambdas <- rbindlist(all_lambdas)
@@ -205,18 +205,46 @@ run_each_group <- function(lambda_files, random_trend){
 # run the boostrapping of trends for all lambda, and adjust for the random of that language
 lpi_trends_adjusted <- run_each_group(all_lambdas, random_trend = random_trend[[1]])
 
+language_frame <- list()
+for(i in 1:56){
+  language_frame[[i]] <- lpi_trends_adjusted %>%
+    filter(row_number() %in% c(i:57)) %>%
+    mutate(lambda = c(0, diff(log10(LPI)))) %>%
+    mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
+    mutate(average_lambda = mean(lambda)) %>% 
+    ungroup() %>% 
+    #filter(taxa != "random") %>% print(head()) %>%
+    select(conf_diff, average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
+    unique() %>%
+    mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+    mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low"))) %>%
+    mutate(series_start = i)
+}
+
+# count the number increasing and decreasing time series for each taxa/language combination
+series_start_var <- rbindlist(language_frame) %>% 
+  mutate(Year = as.character(Year)) %>% 
+  select(factor_rate, series_start) %>%
+  unique() %>%
+  bind_rows(data.frame("factor_rate" = NA, "series_start" = 57)) %>%
+  arrange(series_start) %>%
+  select(series_start, factor_rate)
+
 # plot all the class level trends
-lpi_trends_adjusted %>%
+lpi_trends_adjusted %>% 
+  cbind(series_start_var) %>%
   mutate(Year = as.numeric(Year)) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Average increase", "Average decrease"))) %>%
   ggplot() +
+  geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 2) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_brewer(palette="Paired") +
-  scale_colour_brewer(palette="Paired") +
+  scale_colour_manual("Benchmark month", na.translate = F, values = c("#009E73", "#D55E00")) +
   ylab("SAI") +
   xlab(NULL) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
-ggsave("random_adjusted_overall_SAI_1000_95_species-weight.png", scale = 1, dpi = 350)
+ggsave("random_adjusted_overall_SAI_1000_95_equal-weight.png", scale = 1, dpi = 350)
 
