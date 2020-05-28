@@ -194,6 +194,56 @@ series_start_var$change_diff <- series_start_var$increasing - series_start_var$d
 series_start_var <- series_start_var %>%
   mutate(up_down = ifelse(change_diff > 0, "increasing", "decreasing")) 
 
+# build plot for language and certainty 
+rate_plot_series_var <- series_start_var %>%
+  mutate(up_down = factor(up_down, levels = c("increasing", "decreasing"), labels = c("Increase", "Decrease"))) %>%
+  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"),
+                       labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                          labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  ggplot() +
+  ggtitle("Total monthly view trends") +
+  geom_tile(aes(x = language, y = taxa, fill = up_down), colour = "white", size = 1.5) +
+  scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
+  scale_alpha(range = c(0.5, 1)) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.title = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.border = element_blank(),
+        legend.position = "none") 
+
+# build dataframe for setting out the legend
+d <- expand.grid(x=1:2,y=1:2)
+d <- merge(d,data.frame(x=1:2,xlabel=c("X low", "X high")),by="x")
+d <- merge(d,data.frame(y=1:2,ylabel=c("Y low", "Y high")),by="y")
+d$alpha_val <- d$x
+
+# build the legend with the appropriate colours for change and certainty
+g.legend <- ggplot(d, aes(x,y,fill = ylabel)) +
+  geom_tile(colour = "white", size = 1.5) +
+  scale_fill_manual("Rate of change", values = c("#009E73", "#D55E00")) +
+  scale_alpha(range = c(0.5, 1)) +
+  scale_x_continuous(breaks = c(1, 2), labels = c("Low", "High")) +
+  geom_segment(aes(x=0.3, xend = 0.3, y = 1.4, yend = 0.6 ), arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
+  geom_segment(aes(x=0.3, xend = 0.3, y = 1.6, yend = 2.4), arrow = arrow(length = unit(0.15, "cm"), type = "closed")) +
+  theme_void() +
+  theme(legend.position="none",
+        panel.background=element_blank(),
+        plot.margin=margin(t=10,b=10,l=10),
+        axis.title.y = element_text(angle = 90),
+        axis.title.x = element_text(hjust = 0.6, vjust = -0.8),
+        axis.text.x = element_text()) +
+  labs(title=NULL,x= "Certainty", y = "Change") +
+  theme(axis.title=element_text(color="black"))
+
+# combine the plot and the legend
+ggdraw() +
+  draw_plot(rate_plot, -0.13, width = 1, height = 1, scale = 0.75) +
+  draw_plot(g.legend, width = 0.2, height = 0.3, scale = 0.95, hjust = -3.65, vjust = -1.96)
+
+### rest to be reset to how it was before for whole series
 
 # calculate number of factors for rates and confidence for each language
 sort_rate_lang <- language_frame %>%
