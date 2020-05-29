@@ -14,39 +14,41 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
+directory <- "J:/submission_2/lambda_files"
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("overall_10-random-languages.rds")
+# random_trend <- readRDS("J:/submission_2/overall_10-random-languages.rds")
 
-# adjust each of the lambda values for random
-# adjust the year column
-for(i in 1:length(random_trend)){
-  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
-  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
-  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
-  
-  # calculate lambda for random
-  random_trend[[i]] <- random_trend[[i]] %>%
-    filter(date %in% c(1977:2033))
-  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
-  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
-  random_trend[[i]]$language <- languages[i]
+# read in the days per month trends
+random_days <- readRDS("J:/submission_2/random_days_per_month_rate.rds")
+species_days <- readRDS("J:/submission_2/species_days_per_month_rate.rds")
+
+# read in the rds for total monthly views to retrieve the lambda ids
+total_monthly_views <- readRDS("J:/submission_2/total_monthly_views_10-languages.rds")
+
+## format for the lpi function
+# rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
+iucn_views_poll <- list()
+for(i in 1:length(total_monthly_views)){
+  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
+  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
+    data_fin <- x %>%
+      select(article, q_wikidata, dec_date, av_views) %>%
+      mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
+      filter(complete.cases(.)) %>%
+      select(q_wikidata, SpeciesSSet, article) %>%
+      unique() %>%
+      mutate(SpeciesSSet = as.character(SpeciesSSet))
+    return(data_fin)
+  })
 }
 
-# bind together and plot the random trends
-rbindlist(random_trend) %>%
-  ggplot() +
-  geom_line(aes(x = Year, y = LPI_final, group = language)) +
-  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-  facet_wrap(~language) +
-  theme_bw()
-
 # string for pollinating classes, plus random
-classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -83,8 +85,65 @@ user_files <- view_directories(classes,
 # read in all the files in groups for each language
 language_views <- list()
 system.time(for(i in 1:length(user_files)){
-  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
+  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE, colClasses = list(character = "SpeciesSSet"))
 })
+
+## adjust the species trends and the random trends for the number of day per month trends
+# merge each lambda file with the speciesSSet ID from view data
+merge_lambda <- list()
+merge_fin_lambda <- list()
+for(i in 1:length(language_views)){
+  for(j in 1:length(language_views[[i]])){
+    merge_lambda[[j]] <- inner_join(language_views[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
+      mutate(taxa = classes[i]) %>%
+      mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+    print(nrow(language_views[[i]][[j]]) - nrow(merge_lambda[[j]]))
+  }
+  merge_fin_lambda[[i]] <- merge_lambda
+}
+
+# subtract the days per month rate from the individual rates
+View(merge_fin_lambda)
+
+whole_day_adjusted <- list()
+for(i in 1:length(merge_fin_lambda)){
+  total_lambda_merge <- list()
+    for(j in 1:length(merge_fin_lambda[[i]])){
+      total_lambda_merge[[j]] <- melt(merge_fin_lambda[[i]][[j]], id = c("V1", "SpeciesSSet", "Freq", "q_wikidata", "article", "language", "taxa")) %>%
+        mutate(variable = as.character((variable)))
+      species_days[[j]][[i]]$dec_date <- as.character(species_days[[j]][[i]]$dec_date)
+      total_lambda_merge[[j]] <- inner_join(total_lambda_merge[[j]], species_days[[j]][[i]], by = c("q_wikidata", "article", "variable" = "dec_date"))
+      total_lambda_merge[[j]]$adjusted_rate <- total_lambda_merge[[j]]$value - total_lambda_merge[[j]]$rate
+    }
+  whole_day_adjusted[[i]] <- total_lambda_merge
+}
+
+
+
+# random_days
+
+# adjust each of the lambda values for random
+# adjust the year column
+for(i in 1:length(random_trend)){
+  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
+  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
+  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
+  
+  # calculate lambda for random
+  random_trend[[i]] <- random_trend[[i]] %>%
+    filter(date %in% c(1977:2033))
+  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
+  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
+  random_trend[[i]]$language <- languages[i]
+}
+
+# bind together and plot the random trends
+rbindlist(random_trend) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI_final, group = language)) +
+  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  facet_wrap(~language) +
+  theme_bw()
 
 # adjust the lambdas for each species for each language with random
 adj_lambdas <- list()
