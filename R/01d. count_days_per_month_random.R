@@ -64,8 +64,6 @@ for(i in 1:length(random_no_dup)){
   print(length(unique_articles))
 }
 
-####
-
 # bind each pair of random views together
 language_views_monthly_bound <- list()
 for(i in 1:length(language_views)){
