@@ -2,6 +2,11 @@ library(data.table)
 library(dplyr)
 library(ggplot2)
 
+# *** all of above points solved by adjusting for rate of chage of number of days
+# do the pages that you pick up vary between accesses of the API?
+# what's the variation in the number of days per months? 
+# rate of change for number of days in each month? 
+
 # set up vector for languages, classes, and directory
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 directory <- "J:/submission_2/user_trends/"
@@ -73,11 +78,5 @@ for(i in 1:length(language_views_edit)){
 
 # save as rds file to rds
 saveRDS(days_all, "J:/submission_2/species_days_per_month_rate.rds")
-
-# do the pages that you pick up vary between accesses of the API?
-# what's the variation about the mean number of days? 
-# rate of change for number of days in each month? 
-
-# * all of above points solved by adjusting for rate of chage of number of days
 
 
