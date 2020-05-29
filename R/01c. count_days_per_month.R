@@ -42,77 +42,37 @@ language_views_edit <- language_views
 language_views_edit[[9]][[1]] <- language_views_edit[[9]][[1]] %>%
   dplyr::select(-title, -V2)
 
-# count the number of days per month
-subset_amphib$year <- substr(subset_amphib$timestamp, start = 1, stop = 4)
-subset_amphib$month <- substr(subset_amphib$timestamp, start = 5, stop = 6)
-subset_amphib$day <- substr(subset_amphib$timestamp, start = 7, stop = 8)
+# set up outer list and inner list, and then iterate through each language and each class within languages
+# count number of days per month, and then change days per month to rate of change
+days_all <- list()
+for(i in 1:length(language_views_edit)){
+  days <- list()
+  for(j in 1:length(language_views_edit[[i]])){
+    
+    # count the number of days per month
+    language_views_edit[[i]][[j]]$year <- substr(language_views_edit[[i]][[j]]$timestamp, start = 1, stop = 4)
+    language_views_edit[[i]][[j]]$month <- substr(language_views_edit[[i]][[j]]$timestamp, start = 5, stop = 6)
+    language_views_edit[[i]][[j]]$day <- substr(language_views_edit[[i]][[j]]$timestamp, start = 7, stop = 8)
+    
+    # count the number of days per month, and then calculate a rate of change for those days per month
+    days[[j]] <- language_views_edit[[i]][[j]] %>%
+      group_by(q_wikidata, article, year) %>%
+      count(month) %>%
+      ungroup() %>%
+      group_by(article) %>%
+      mutate(rate = c(0, diff(log10(n)))) %>%
+      ungroup() %>%
+      mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
+      mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
+      mutate(year = as.numeric(year)) %>%
+      mutate(month = as.numeric(month)) %>%
+      mutate(dec_date = 1970 + (year - 2015)*12 + month)
+  }
+  days_all[[i]] <- days
+}
 
-# count the number of days per month, and then calculate a rate of change for those days per month
-days <- subset_amphib %>%
-  group_by(q_wikidata, article, year) %>%
-  count(month) %>%
-  ungroup() %>%
-  group_by(article) %>%
-  mutate(rate = c(0, diff(log10(n)))) %>%
-  ungroup() %>%
-  mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
-  mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
-  mutate(dec_date = 1970 + (year - 2015)*12 + month)
-
-
-
-day_count <- subset_amphib %>%
-  group_by(article, year) %>%
-  count(month) %>%
-  ungroup() %>%
-  mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
-  mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
-  group_by(date_col) %>% 
-  mutate(mean_days = mean(n)) %>%
-  mutate(lower_interval = mean_days - (1.96 * mean_days/sqrt(length(mean_days)))) %>%
-  mutate(upper_interval = mean_days + (1.96 * mean_days/sqrt(length(mean_days)))) %>%
-  ungroup() %>%
-  select(-article, -year, -month, -n) %>%
-  unique() %>%
-  mutate(rate = c(0, diff(log10(mean_days)))) %>%
-  mutate(index = cumprod(10^c(rate)))
-
-subset_amphib %>%
-  group_by(year, month) %>%
-  tally(views) %>% 
-  ungroup() %>% 
-  mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
-  mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
-  mutate(rate = c(0, diff(log10(n)))) %>%
-  mutate(adjusted_rate = (rate - day_count$rate)) %>%
-  mutate(adjusted_index = cumprod(10^c(adjusted_rate))) %>%
-  mutate(index = cumprod(10^c(rate))) %>%
-  ggplot() +
-    geom_line(aes(x = date_col, y = index)) +
-    geom_line(aes(x = date_col, y = adjusted_index), colour = "red")
-
-subset_amphib %>%
-  group_by(year, month) %>%
-  summarise(n = mean(views)) %>% 
-  ungroup() %>% 
-  mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
-  mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
-  ggplot() +
-  geom_line(aes(x = date_col, y = n))
-
-subset_amphib %>%
-  group_by(year, month) %>%
-  tally(views) %>% 
-  ungroup() %>% 
-  mutate(date_col = paste(year, month, "01", sep = "/")) %>% 
-  mutate(date_col = as.Date(date_col, format = "%Y/%m/%d")) %>%
-  mutate(rate = c(0, diff(log10(n)))) %>%
-  mutate(adjusted_rate = (rate - day_count$rate)) %>%
-  mutate(index = cumprod(10^c(adjusted_rate))) %>%
-  ggplot() +
-  geom_line(aes(x = date_col, y = n))
-  
-
+# save as rds file to rds
+saveRDS(days_all, "J:/submission_2/species_days_per_month_rate.rds")
 
 # do the pages that you pick up vary between accesses of the API?
 # what's the variation about the mean number of days? 
