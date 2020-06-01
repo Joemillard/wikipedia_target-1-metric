@@ -150,10 +150,10 @@ merge_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fil
   recast_lambda()
 
 # read in all the lambda files for the random data for each language
-random_views <- list()
+random_views <- list(list())
 random_directories <- view_directories(classes = "random", directory)
 system.time(for(i in 1:length(random_directories[[1]])){
-  random_views[[i]] <- fread(random_directories[[1]][i], encoding = "UTF-8", stringsAsFactors = FALSE, colClasses = list(character = "SpeciesSSet"))
+  random_views[[1]][[i]] <- fread(random_directories[[1]][i], encoding = "UTF-8", stringsAsFactors = FALSE, colClasses = list(character = "SpeciesSSet"))
 })
 
 random_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_files = random_views, 
