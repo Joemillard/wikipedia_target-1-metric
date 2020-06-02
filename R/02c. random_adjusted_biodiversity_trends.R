@@ -181,15 +181,15 @@ merge_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fil
                                     day_rate = species_days,
                                     view_type = "species") %>% recast_lambda()
 
-merge_fin_lambda <- merge_monthly_days(lambda_files = language_views, 
-                                       monthly_views = rescale_monthly_views(total_monthly_views),
-                                       view_type = "species")
+#merge_fin_lambda <- merge_monthly_days(lambda_files = language_views, 
+#                                       monthly_views = rescale_monthly_views(total_monthly_views),
+#                                       view_type = "species")
 
-for(i in 1:length(merge_fin_lambda)){
-  for(j in 1:length(merge_fin_lambda[[i]])){
-    merge_fin_lambda[[i]][[j]] <- merge_fin_lambda[[i]][[j]] %>% select(-q_wikidata, -article, -language, -taxa)
-  }
-}
+#for(i in 1:length(merge_fin_lambda)){
+#  for(j in 1:length(merge_fin_lambda[[i]])){
+#    merge_fin_lambda[[i]][[j]] <- merge_fin_lambda[[i]][[j]] %>% select(-q_wikidata, -article, -language, -taxa)
+#  }
+#}
 
 # read in all the lambda files for the random data for each language
 random_views <- list(list())
@@ -204,13 +204,13 @@ random_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fi
                                      day_rate = random_days,
                                      view_type = "random") %>% recast_lambda()
 
-random_fin_lambda <- merge_monthly_days(lambda_files = random_views, 
-                                        monthly_views = rescale_monthly_views(random_monthly_views),
-                                        view_type = "random")
+#random_fin_lambda <- merge_monthly_days(lambda_files = random_views, 
+#                                        monthly_views = rescale_monthly_views(random_monthly_views),
+#                                        view_type = "random")
 
-for(i in 1:length(random_fin_lambda[[1]])){
-  random_fin_lambda[[1]][[i]] <- random_fin_lambda[[1]][[i]] %>% select(-q_wikidata, -article, -language)
-}
+#for(i in 1:length(random_fin_lambda[[1]])){
+#  random_fin_lambda[[1]][[i]] <- random_fin_lambda[[1]][[i]] %>% select(-q_wikidata, -article, -language)
+#}
 
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
@@ -298,12 +298,12 @@ fin_bound_trends <- rbindlist(bound_trends)
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
-  geom_line(aes(x = Year, y = LPI, colour = language)) +
+  #geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
+  geom_smooth(aes(x = Year, y = LPI, colour = language), span  = 0.3) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_brewer(palette="Paired") +
   scale_colour_brewer(palette="Paired") +
-  facet_wrap(~taxa, scales = "free_y") +
+  facet_wrap(~taxa) +
   ylab("SAI") +
   xlab(NULL) +
   theme_bw()
