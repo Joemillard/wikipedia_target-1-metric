@@ -14,7 +14,7 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- "J:/submission_2/lambda_files"
+directory <- "Z:/submission_2/lambda_files"
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
@@ -23,12 +23,14 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 # random_trend <- readRDS("J:/submission_2/overall_10-random-languages.rds")
 
 # read in the days per month trends
-random_days <- readRDS("J:/submission_2/random_days_per_month_rate.rds")
-species_days <- readRDS("J:/submission_2/species_days_per_month_rate.rds")
+random_days <- list(list())
+random_days[[1]] <- readRDS("Z:/submission_2/random_days_per_month_rate.rds")
+species_days <- readRDS("Z:/submission_2/species_days_per_month_rate.rds")
 
 # read in the rds for total monthly views and random monthly views to retrieve the lambda ids
-total_monthly_views <- readRDS("J:/submission_2/total_monthly_views_10-languages.rds")
-random_monthly_views <- readRDS("J:/submission_2/total_monthly_views_random_10-languages.rds")
+total_monthly_views <- readRDS("Z:/submission_2/total_monthly_views_10-languages.rds")
+random_monthly_views <- list(list())
+random_monthly_views[[1]] <- readRDS("Z:/submission_2/total_monthly_views_random_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
@@ -46,8 +48,10 @@ restructure_views <- function(x){
 rescale_monthly_views <- function(monthly_views){
   iucn_views_poll <- list()
   for(i in 1:length(monthly_views)){
+    print(length(monthly_views))
     iucn_inner_list <-list()
     for(j in 1:length(monthly_views[[i]])){
+      print(length(monthly_views[[i]]))
       iucn_inner_list[[j]] <- rescale_iucn(monthly_views[[i]][[j]])
       iucn_inner_list[[j]] <- select_comp(iucn_inner_list[[j]]) # select time series length
       iucn_inner_list[[j]] <- restructure_views(iucn_inner_list[[j]])
@@ -100,34 +104,61 @@ system.time(for(i in 1:length(user_files)){
 
 ## adjust the species trends and the random trends for the number of day per month trends
 # merge each lambda file with the speciesSSet ID from view data
-merge_monthly_days <- function(lambda_files, monthly_views){
+merge_monthly_days <- function(lambda_files, monthly_views, view_type){
   merge_lambda <- list()
   merge_fin_lambda <- list()
-  for(i in 1:length(lambda_files)){
-    for(j in 1:length(lambda_files[[i]])){
-      merge_lambda[[j]] <- inner_join(lambda_files[[i]][[j]], monthly_views[[j]][[i]], by = "SpeciesSSet") %>%
-        mutate(taxa = classes[i]) %>%
-        mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
-      print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]]))
+  if(view_type == "species"){
+    for(i in 1:length(lambda_files)){
+      for(j in 1:length(lambda_files[[i]])){
+        merge_lambda[[j]] <- inner_join(lambda_files[[i]][[j]], monthly_views[[j]][[i]], by = "SpeciesSSet") %>%
+          mutate(taxa = classes[i]) %>%
+          mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]]))
+      }
+      merge_fin_lambda[[i]] <- merge_lambda
     }
-    merge_fin_lambda[[i]] <- merge_lambda
+  }
+  else{
+    for(i in 1:length(lambda_files)){
+      for(j in 1:length(lambda_files[[i]])){
+        merge_lambda[[j]] <- inner_join(lambda_files[[i]][[j]], monthly_views[[i]][[j]], by = "SpeciesSSet") %>%
+          mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]]))
+      }
+      merge_fin_lambda[[i]] <- merge_lambda
+    }
   }
   return(merge_fin_lambda)
 }
 
 # adjust each set of lambdas for the rate of change of days for that article
-adjust_day_rate <- function(lambda_files, day_rate){
+adjust_day_rate <- function(lambda_files, day_rate, view_type){
   whole_day_adjusted <- list()
-  for(i in 1:length(lambda_files)){
-    total_lambda_merge <- list()
+  if(view_type == "species"){
+    for(i in 1:length(lambda_files)){
+      total_lambda_merge <- list()
+        for(j in 1:length(lambda_files[[i]])){
+          total_lambda_merge[[j]] <- reshape2::melt(lambda_files[[i]][[j]], id = c("V1", "SpeciesSSet", "Freq", "q_wikidata", "article", "language", "taxa")) %>%
+            mutate(variable = as.character((variable)))
+          day_rate[[j]][[i]]$dec_date <- as.character(day_rate[[j]][[i]]$dec_date)
+          total_lambda_merge[[j]] <- inner_join(total_lambda_merge[[j]], day_rate[[j]][[i]], by = c("q_wikidata", "article", "variable" = "dec_date"))
+          total_lambda_merge[[j]]$adjusted_rate <- total_lambda_merge[[j]]$value - total_lambda_merge[[j]]$rate
+        }
+      whole_day_adjusted[[i]] <- total_lambda_merge
+    }
+  }
+  else{
+    for(i in 1:length(lambda_files)){
+      total_lambda_merge <- list()
       for(j in 1:length(lambda_files[[i]])){
-        total_lambda_merge[[j]] <- melt(lambda_files[[i]][[j]], id = c("V1", "SpeciesSSet", "Freq", "q_wikidata", "article", "language", "taxa")) %>%
+        total_lambda_merge[[j]] <- reshape2::melt(lambda_files[[i]][[j]], id = c("V1", "SpeciesSSet", "Freq", "q_wikidata", "article", "language")) %>%
           mutate(variable = as.character((variable)))
-        day_rate[[j]][[i]]$dec_date <- as.character(day_rate[[j]][[i]]$dec_date)
-        total_lambda_merge[[j]] <- inner_join(total_lambda_merge[[j]], day_rate[[j]][[i]], by = c("q_wikidata", "article", "variable" = "dec_date"))
+        day_rate[[i]][[j]]$dec_date <- as.character(day_rate[[i]][[j]]$dec_date)
+        total_lambda_merge[[j]] <- inner_join(total_lambda_merge[[j]], day_rate[[i]][[j]], by = c("q_wikidata", "article", "variable" = "dec_date"))
         total_lambda_merge[[j]]$adjusted_rate <- total_lambda_merge[[j]]$value - total_lambda_merge[[j]]$rate
       }
-    whole_day_adjusted[[i]] <- total_lambda_merge
+      whole_day_adjusted[[i]] <- total_lambda_merge
+    }
   }
   return(whole_day_adjusted)
 }
@@ -145,8 +176,10 @@ recast_lambda <- function(adjusted_lambda){
 }
 
 merge_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_files = language_views, 
-                                                                      monthly_views = rescale_monthly_views(total_monthly_views)), 
-                                    day_rate = species_days) %>% 
+                                                                      monthly_views = rescale_monthly_views(total_monthly_views),
+                                                                      view_type = "species"), 
+                                    day_rate = species_days,
+                                    view_type = "species") %>% 
   recast_lambda()
 
 # read in all the lambda files for the random data for each language
@@ -157,8 +190,10 @@ system.time(for(i in 1:length(random_directories[[1]])){
 })
 
 random_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_files = random_views, 
-                                                                       monthly_views = rescale_monthly_views(random_monthly_views)), 
-                                     day_rate = random_days) %>% 
+                                                                       monthly_views = rescale_monthly_views(random_monthly_views),
+                                                                       view_type = "random"), 
+                                     day_rate = random_days,
+                                     view_type = "random") %>% 
   recast_lambda()
 
 # adjust each of the lambda values for random
