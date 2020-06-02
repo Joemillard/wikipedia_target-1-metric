@@ -180,7 +180,7 @@ extract_polls <- function(data, poll){
 
 # adjust the lambdas for each of the subsets with random values
 adjust_lambda <- function(x, random_data){
-  data <- melt(x, id = c("X", "SpeciesSSet", "Freq"))
+  data <- reshape2::melt(x, id = c("X", "SpeciesSSet", "Freq"))
   data <- inner_join(data, random_data, by = c("variable" = "date"))
   data$adjusted_lambda <- data$value - data$lamda
   data <- data %>%
