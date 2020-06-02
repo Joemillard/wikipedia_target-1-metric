@@ -179,8 +179,17 @@ merge_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fil
                                                                       monthly_views = rescale_monthly_views(total_monthly_views),
                                                                       view_type = "species"), 
                                     day_rate = species_days,
-                                    view_type = "species") %>% 
-  recast_lambda()
+                                    view_type = "species") %>% recast_lambda()
+
+merge_fin_lambda <- merge_monthly_days(lambda_files = language_views, 
+                                       monthly_views = rescale_monthly_views(total_monthly_views),
+                                       view_type = "species")
+
+for(i in 1:length(merge_fin_lambda)){
+  for(j in 1:length(merge_fin_lambda[[i]])){
+    merge_fin_lambda[[i]][[j]] <- merge_fin_lambda[[i]][[j]] %>% select(-q_wikidata, -article, -language, -taxa)
+  }
+}
 
 # read in all the lambda files for the random data for each language
 random_views <- list(list())
@@ -193,8 +202,15 @@ random_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fi
                                                                        monthly_views = rescale_monthly_views(random_monthly_views),
                                                                        view_type = "random"), 
                                      day_rate = random_days,
-                                     view_type = "random") %>% 
-  recast_lambda()
+                                     view_type = "random") %>% recast_lambda()
+
+random_fin_lambda <- merge_monthly_days(lambda_files = random_views, 
+                                        monthly_views = rescale_monthly_views(random_monthly_views),
+                                        view_type = "random")
+
+for(i in 1:length(random_fin_lambda[[1]])){
+  random_fin_lambda[[1]][[i]] <- random_fin_lambda[[1]][[i]] %>% select(-q_wikidata, -article, -language)
+}
 
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
@@ -214,7 +230,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trends_adjusted){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 50)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -237,7 +253,7 @@ for(i in 1:length(random_trends_adjusted)){
   random_trends_adjusted[[i]]$date <- as.numeric(1977:2033)
   random_trends_adjusted[[i]]$Year <- (random_trends_adjusted[[i]]$date - 1970)/12 + 2015
   random_trends_adjusted[[i]]$Year <- as.character(random_trends_adjusted[[i]]$Year)
-  random_trends_adjusted[[i]]$lamda <- c(0, diff(log10(random_trends_adjusted[[1]]$LPI[1:57])))
+  random_trends_adjusted[[i]]$lamda <- c(0, diff(log10(random_trends_adjusted[[i]]$LPI[1:57])))
   random_trends_adjusted[[i]]$date <- paste("X", random_trends_adjusted[[i]]$date, sep = "")
 }
 
@@ -253,8 +269,8 @@ rbindlist(random_trends_adjusted) %>%
 adj_lambdas <- list()
 all_lambdas <- list()
 for(i in 1:length(merge_fin_lambda)){
-  for(j in 1:length(random_trends_adjusted)){
-    data_file <- language_views[[i]][[j]]
+  for(j in 1:length(merge_fin_lambda[[i]])){
+    data_file <- merge_fin_lambda[[i]][[j]]
     adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trends_adjusted[[j]]$lamda, FUN = "-"))
   }
   all_lambdas[[i]] <- adj_lambdas
