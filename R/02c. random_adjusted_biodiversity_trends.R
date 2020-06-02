@@ -20,7 +20,7 @@ directory <- "Z:/submission_2/lambda_files"
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-# random_trend <- readRDS("J:/submission_2/overall_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_10-random-languages.rds")
 
 # read in the days per month trends
 random_days <- list(list())
@@ -196,40 +196,6 @@ random_fin_lambda <- adjust_day_rate(lambda_files = merge_monthly_days(lambda_fi
                                      view_type = "random") %>% 
   recast_lambda()
 
-# adjust each of the lambda values for random
-# adjust the year column
-for(i in 1:length(random_trend)){
-  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
-  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
-  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
-  
-  # calculate lambda for random
-  random_trend[[i]] <- random_trend[[i]] %>%
-    filter(date %in% c(1977:2033))
-  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
-  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
-  random_trend[[i]]$language <- languages[i]
-}
-
-# bind together and plot the random trends
-rbindlist(random_trend) %>%
-  ggplot() +
-  geom_line(aes(x = Year, y = LPI_final, group = language)) +
-  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-  facet_wrap(~language) +
-  theme_bw()
-
-# adjust the lambdas for each species for each language with random
-adj_lambdas <- list()
-all_lambdas <- list()
-for(i in 1:length(language_views)){
-  for(j in 1:length(random_trend)){
-    data_file <- language_views[[i]][[j]]
-    adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend[[j]]$lamda, FUN = "-"))
-  }
-  all_lambdas[[i]] <- adj_lambdas
-}
-
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   
@@ -245,17 +211,53 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 }
 
 # function for boostrapping the create_lpi function for each lambda, and generating a 95 % confidence interval
-run_each_group <- function(lambda_files, random_trend){
+run_each_group <- function(lambda_files, random_trends_adjusted){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 10)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
-  boot_res$Year <- random_trend$Year[1:(nrow(random_trend))]
+  boot_res$Year <- random_trends_adjusted$Year[1:(nrow(random_trends_adjusted))]
   boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.975), na.rm = TRUE) 
   boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.025), na.rm = TRUE)
   return(boot_res)
+}
+
+# run the boostrapping of trends for each lambda, and adjust for the random of that language
+random_trends_adjusted <- list()
+for(i in 1:length(random_fin_lambda[[1]])){
+  random_trends_adjusted[[i]] <- run_each_group(random_fin_lambda[[1]][[i]], random_trend[[i]]) %>%
+      mutate(language = languages[i])
+}
+
+# adjust each of the lambda values for random
+# adjust the year column
+for(i in 1:length(random_trends_adjusted)){
+  random_trends_adjusted[[i]]$date <- as.numeric(1977:2033)
+  random_trends_adjusted[[i]]$Year <- (random_trends_adjusted[[i]]$date - 1970)/12 + 2015
+  random_trends_adjusted[[i]]$Year <- as.character(random_trends_adjusted[[i]]$Year)
+  random_trends_adjusted[[i]]$lamda <- c(0, diff(log10(random_trends_adjusted[[1]]$LPI[1:57])))
+  random_trends_adjusted[[i]]$date <- paste("X", random_trends_adjusted[[i]]$date, sep = "")
+}
+
+# bind together and plot the random trends
+rbindlist(random_trends_adjusted) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI, group = language)) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, group = language), alpha = 0.3) +
+  facet_wrap(~language) +
+  theme_bw()
+
+# adjust the lambdas for each species for each language with random
+adj_lambdas <- list()
+all_lambdas <- list()
+for(i in 1:length(merge_fin_lambda)){
+  for(j in 1:length(random_trends_adjusted)){
+    data_file <- language_views[[i]][[j]]
+    adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trends_adjusted[[j]]$lamda, FUN = "-"))
+  }
+  all_lambdas[[i]] <- adj_lambdas
 }
 
 # run the boostrapping of trends for each lambda, and adjust for the random of that language
@@ -263,8 +265,8 @@ lpi_trends_adjusted <- list()
 bound_trends <- list()
 for(i in 1:length(all_lambdas)){
   for(j in 1:length(all_lambdas[[i]])){
-    lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trend[[j]]) %>%
-      mutate(language = random_trend[[j]]$language)
+    lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trends_adjusted[[j]]) %>%
+      mutate(language = random_trends_adjusted[[j]]$language)
     
   }
   
@@ -290,7 +292,7 @@ fin_bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
+ggsave("random-adjusted_day-adjusted__class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
 
 # convert series back to lambda, and then take sets varying the start date up by one
 # figure for overall changes of different groupings
