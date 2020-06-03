@@ -22,7 +22,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 # read in the lambda files 
 random_trend <- readRDS("Z:/submission_2/overall_10-random-languages.rds")
 
-# read in the days per month trends
+# read in the days per month trends - random needs to be assigned to a list to fit with species functions
 random_days <- list(list())
 random_days[[1]] <- readRDS("Z:/submission_2/random_days_per_month_rate.rds")
 species_days <- readRDS("Z:/submission_2/species_days_per_month_rate.rds")
@@ -30,10 +30,9 @@ species_days <- readRDS("Z:/submission_2/species_days_per_month_rate.rds")
 # read in the rds for total monthly views and random monthly views to retrieve the lambda ids
 total_monthly_views <- readRDS("Z:/submission_2/total_monthly_views_10-languages.rds")
 random_monthly_views <- list(list())
-random_monthly_views[[1]] <- readRDS("Z:/submission_2/total_monthly_views_random_10-languages.rds")
+random_monthly_views[[1]] <- readRDS("Z:/submission_2/total_monthly_views_random_10-languages.rds") # - random needs to be assigned to a list to fit with species functions
 
-## format for the lpi function
-# rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
+# selet columns to identify each article, and then unique
 restructure_views <- function(x){
   data_fin <- x %>%
     select(article, q_wikidata, dec_date, av_views) %>%
@@ -45,8 +44,11 @@ restructure_views <- function(x){
   return(data_fin)
 }
 
+# rescale each dataframe to start at 1970 and merge back with the views, subset for complete series, then output lpi structure with original id
 rescale_monthly_views <- function(monthly_views){
   iucn_views_poll <- list()
+  
+  # iterate through each class/language combination, and then run functions to format view data
   for(i in 1:length(monthly_views)){
     print(length(monthly_views))
     iucn_inner_list <-list()
@@ -107,23 +109,27 @@ system.time(for(i in 1:length(user_files)){
 merge_monthly_days <- function(lambda_files, monthly_views, view_type){
   merge_lambda <- list()
   merge_fin_lambda <- list()
+  
+  # due to difference in nesting between random and species, need to specify view set type
   if(view_type == "species"){
     for(i in 1:length(lambda_files)){
       for(j in 1:length(lambda_files[[i]])){
         merge_lambda[[j]] <- inner_join(lambda_files[[i]][[j]], monthly_views[[j]][[i]], by = "SpeciesSSet") %>%
-          mutate(taxa = classes[i]) %>%
+          mutate(taxa = classes[i]) %>% # assign class as column
           mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
-        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]]))
+        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]])) # print row subtraction to check dataframes are same size
       }
       merge_fin_lambda[[i]] <- merge_lambda
     }
   }
+  
+  # if type is not 'species' (random), need to switch i and j for monthly views
   else{
     for(i in 1:length(lambda_files)){
       for(j in 1:length(lambda_files[[i]])){
         merge_lambda[[j]] <- inner_join(lambda_files[[i]][[j]], monthly_views[[i]][[j]], by = "SpeciesSSet") %>%
           mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
-        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]]))
+        print(nrow(lambda_files[[i]][[j]]) - nrow(merge_lambda[[j]])) # print row subtraction to check dataframes are same size
       }
       merge_fin_lambda[[i]] <- merge_lambda
     }
@@ -348,10 +354,10 @@ series_start_var <- series_start_var %>%
 # build plot for language and certainty 
 rate_plot_series_var <- series_start_var %>%
   mutate(up_down = factor(up_down, levels = c("increasing", "decreasing"), labels = c("Increase", "Decrease"))) %>%
-  mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"),
-                       labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
-  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
-                          labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  #mutate(taxa = factor(taxa, levels = c("insecta", "actinopterygii", "amphibia", "mammalia", "aves", "reptilia"),
+  #                     labels = c("Insecta", "Actinopterygii", "Amphibia", "Mammalia", "Aves", "Reptilia"))) %>% 
+  #mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+  #                        labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
   ggplot() +
   ggtitle("Total monthly view trends") +
   geom_tile(aes(x = language, y = taxa, fill = up_down), colour = "white", size = 1.5) +
