@@ -110,21 +110,23 @@ for(i in 1:length(language_views_edit)){
   language_views_monthly[[i]] <- lapply(language_views_edit[[i]], NA_timestamp)
 }
 
-# calculate total monthly views for each set of views
+# calculate total monthly views (or daily average views) for each set of views
+average_views_monthly <- list()
 for(i in 1:length(language_views_monthly)){
-  language_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
+  average_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
 }
 
 # add names for languages and class to each element of the list
-names(language_views_monthly) <- languages
-for(i in 1:length(language_views_monthly)){
-  names(language_views_monthly[[i]]) <- classes
+names(average_views_monthly) <- languages
+for(i in 1:length(average_views_monthly)){
+  names(average_views_monthly[[i]]) <- classes
 }
 
 # save total monthly views as an rds
 saveRDS(language_views_monthly, "J:/submission_2/total_monthly_views_10-languages.rds")
 
-
+# save daily average views as an rds
+saveRDS(average_views_monthly, "Z:/submission_2/daily_average_views_10-languages.rds")
 
 
 #

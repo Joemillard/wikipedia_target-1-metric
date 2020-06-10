@@ -45,7 +45,7 @@ run_dat <- function(terms_1, av_all){
   # calculate average per each month
   terms_av <- terms %>%
     group_by(article, q_wikidata, year, month) %>%
-    summarise(av_views = sum(views)) %>%
+    summarise(av_views = mean(views, na.rm = TRUE)) %>%
     ungroup()
   
   if(av_all == TRUE) {
@@ -53,7 +53,7 @@ run_dat <- function(terms_1, av_all){
     # calculate average per each month
     terms_av_year <- terms %>%
       group_by(year, month) %>%
-      summarise(av_views = sum(views)) %>%
+      summarise(av_views = mean(views, na.rm = TRUE)) %>%
       ungroup()
     
     terms_av_year$date <- paste(terms_av_year$year, terms_av_year$month, sep = "-")
