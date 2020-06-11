@@ -14,7 +14,7 @@ source("R/00. functions.R")
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 
 # read in the rds for total monthly views
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_random_10-languages.rds"))
+total_monthly_views <- readRDS("Z:submission_2/average_daily_views_random_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views
@@ -38,4 +38,4 @@ for(i in 1:length(languages)){
   lpi_trends[[i]] <- LPIMain(paste(languages[i], "random_all_infile_conf.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2033, goParallel = TRUE)
 }
 
-saveRDS(lpi_trends, "overall_10-random-languages.rds")
+saveRDS(lpi_trends, "Z:/submission_2/overall_daily-views_10-random-languages.rds")

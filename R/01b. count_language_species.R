@@ -9,7 +9,7 @@ library(forcats)
 library(patchwork)
 library(here)
 
-# read in the rds for total monthly views
+# read in the rds for total monthly views - change this to average views
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2//user_trends/total_monthly_views_10-languages.rds"))
 
 # set up vector for languages, classes, and directory

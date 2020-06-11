@@ -162,3 +162,5 @@ for(i in 1:length(language_views_monthly)){
 
 # save total monthly views as an rds
 saveRDS(language_views_monthly_bound, "Z:/submission_2/total_monthly_views_random_10-languages.rds")
+
+saveRDS(language_views_monthly_bound, "Z:/submission_2/average_daily_views_random_10-languages.rds")
