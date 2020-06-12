@@ -16,13 +16,13 @@ source("R/00. functions.R")
 directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
 iucn_views_poll <- list()
-for(i in 1:length(total_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+for(i in 1:length(average_monthly_views)){
+  iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
     data_fin <- x %>%
@@ -239,4 +239,4 @@ bound_trends %>% cbind(series_start_var) %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("random_adjusted_all-class_SAI_start-point.png", scale = 1.1, dpi = 350)
+ggsave("average-view_random_adjusted_all-class_SAI_start-point.png", scale = 1.1, dpi = 350)
