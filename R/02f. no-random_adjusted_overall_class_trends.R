@@ -11,16 +11,16 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
+directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
 iucn_views_poll <- list()
-for(i in 1:length(total_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+for(i in 1:length(average_monthly_views)){
+  iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
     data_fin <- x %>%
@@ -39,7 +39,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("overall_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -232,4 +232,4 @@ bound_trends_list %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_all-class_SAI_1000_95_no_random.png", scale = 1.2, dpi = 350)
+ggsave("average-daily_random_adjusted_all-class_SAI_1000_95_no_random.png", scale = 1.2, dpi = 350)
