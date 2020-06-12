@@ -14,13 +14,13 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- "Z:/submission_2/daily_average_lambda/"
+directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -115,7 +115,7 @@ create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
 run_each_group <- function(lambda_files, random_trend){
   
   # Bootstrap these to get confidence intervals
-  dbi.boot <- boot(lambda_files, create_lpi, R = 10)
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
   
   # Construct dataframe and get mean and 95% intervals
   boot_res <- data.frame(LPI = dbi.boot$t0)
@@ -157,7 +157,7 @@ fin_bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("random_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
+ggsave("average_random_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
 
 # convert series back to lambda, and then take sets varying the start date up by one
 # figure for overall changes of different groupings
