@@ -11,16 +11,16 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
+directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
 iucn_views_poll <- list()
-for(i in 1:length(total_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+for(i in 1:length(average_monthly_views)){
+  iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
     data_fin <- x %>%
@@ -39,7 +39,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("overall_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -150,29 +150,7 @@ merge_species <- rbindlist(merge_species) %>%
   wiki_average()
 
 # reshape lambda files back into year rows, and then split into separate taxonomic classes
-cast_lambda <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
-all_lambdas <- split(cast_lambda, cast_lambda$taxa)
-
-# weight by each taxonomic class
-# set the species number
-fishes <- 30000
-amphibians <- 8000
-birds <- 10000
-insects <- 950000
-mammals <- 6400
-reptiles <- 10200
-
-# calculate the total species, and then from that the weighting for each group
-total_number <- sum(reptiles, bids, mammals, amphibians, fishes, insects)
-weighting_val <- c(fishes/total_number, amphibians/total_number, birds/total_number, insects/total_number, mammals/total_number, reptiles/total_number)
-weighting_val <- c(rep(1, 6)) # equal weighting
-
-#for(i in 1:length(all_lambdas)) {
- # all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] <- all_lambdas[[i]][, 4:ncol(all_lambdas[[i]])] * weighting_val[i]
-#}
-
-# and then bind back together for bootstrap over all values
-all_lambdas <- rbindlist(all_lambdas)
+all_lambdas <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
 
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
@@ -246,5 +224,5 @@ lpi_trends_adjusted %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("random_adjusted_overall_SAI_1000_95_equal-weight.png", scale = 1, dpi = 350)
+ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting.png", scale = 1, dpi = 350)
 
