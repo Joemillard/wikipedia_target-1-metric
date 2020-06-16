@@ -17,6 +17,39 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 # read in the rds for total monthly views
 total_monthly_views <- readRDS("Z:/submission_2/average_daily_views_random_10-languages.rds")
 
+# set up vectors of wiki project class to remove any animal species from the random data
+wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en"), "wiki", sep = "")
+taxa_groups <- c("ACTINOPTERYGII", "AMPHIBIA", "AVES", "INSECTA", "MAMMALIA", "REPTILIA")
+
+# read in the biodiversity pages
+biodiversity_pages <- read.csv(here::here("data/class_wiki_indices/submission_2/all_iucn_titles.csv"), encoding = "UTF-8") %>%
+  filter(site %in% wiki_proj) %>%
+  filter(class_name %in% taxa_groups) %>%
+  select(title, site, class_name) %>%
+  unique() %>%
+  mutate(site = factor(site, levels = wiki_proj)) %>%
+  arrange(site)
+
+# filter the biodiversity pages for the set of languages we're using, then split up, and sort by random languages list
+split_biodiversity_pages <- split(biodiversity_pages, biodiversity_pages$site)
+
+# read in al the random pages# read in the onezoom data for all biodiversity pages
+total_monthly_views <- readRDS("Z:/submission_2/average_daily_views_random_10-languages.rds")
+
+# filter all pages from random that are species pages
+filter_species <- function(data_file, split_biodiversity_pages){
+  data_fin <- anti_join(data_file, split_biodiversity_pages, by = c("article" = "title")) %>%
+    rename("wikipedia_id" = "q_wikidata")
+  return(data_fin)
+}
+
+# merge the random species title with the all species list for each language to remove species from random - antijoin to remove those in both
+for(i in 1:length(total_monthly_views)){
+  total_monthly_views[[i]] <- filter_species(data_file = total_monthly_views[[i]], 
+                                      split_biodiversity_pages = split_biodiversity_pages[[i]]) %>%
+    select(article, wikipedia_id, year, month, av_views, date)
+}
+
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views
 #iucn_views_poll <- list()
