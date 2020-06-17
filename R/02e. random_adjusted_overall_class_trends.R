@@ -201,7 +201,7 @@ for(j in 1:length(lpi_trends_adjusted)){
       mutate(average_lambda = mean(lambda)) %>% 
       select(taxa, average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
       unique() %>%
-      mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+      mutate(factor_rate = factor(ifelse(average_lambda >= 0, "increasing/stable", "decreasing"))) %>% 
       mutate(series_start = i)
   }
   
@@ -223,7 +223,7 @@ for(j in 1:length(lpi_trends_adjusted)){
 # plot all the class level trends with point for whether increasing or decreasing
 rbindlist(all_frames) %>%
   mutate(Year = as.numeric(Year)) %>%
-  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Average increase", "Average decrease"))) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   ggplot() +
