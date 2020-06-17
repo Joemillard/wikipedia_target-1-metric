@@ -33,9 +33,6 @@ biodiversity_pages <- read.csv(here::here("data/class_wiki_indices/submission_2/
 # filter the biodiversity pages for the set of languages we're using, then split up, and sort by random languages list
 split_biodiversity_pages <- split(biodiversity_pages, biodiversity_pages$site)
 
-# read in al the random pages# read in the onezoom data for all biodiversity pages
-total_monthly_views <- readRDS("Z:/submission_2/average_daily_views_random_10-languages.rds")
-
 # filter all pages from random that are species pages
 filter_species <- function(data_file, split_biodiversity_pages){
   data_fin <- anti_join(data_file, split_biodiversity_pages, by = c("article" = "title")) %>%
