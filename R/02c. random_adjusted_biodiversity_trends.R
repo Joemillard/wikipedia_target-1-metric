@@ -20,7 +20,7 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/avera
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -157,7 +157,7 @@ fin_bound_trends %>%
   xlab(NULL) +
   theme_bw()
 
-ggsave("average_random_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
+ggsave("average_random_adjusted_class_SAI_free_1000_95_no-random-species.png", scale = 1.3, dpi = 350)
 
 # convert series back to lambda, and then take sets varying the start date up by one
 # figure for overall changes of different groupings
