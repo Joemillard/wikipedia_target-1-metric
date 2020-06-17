@@ -3,6 +3,7 @@ library(ggplot2)
 library(rlpi)
 library(dplyr)
 library(data.table)
+library(boot)
 
 # read in additional functions
 source("R/00. functions.R")
@@ -11,13 +12,14 @@ source("R/00. functions.R")
 total_monthly_views <- readRDS("Z:/submission_2/total_views/total_monthly_views_random_10-languages.rds")
 
 # set up vector for languages, classes, and directory
-languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
+languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+languages_save <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # calculate average views per month
-sum_annual <- function(data_file){
+average_annual <- function(data_file){
   data_fin <- data_file %>%
-    group_by(q_wikidata, article, year) %>%
+    group_by(wikipedia_id, article, year) %>%
     summarise(n = mean(av_views)) %>%
     ungroup() %>%
     filter(year %in% c(2016, 2017, 2018, 2019))
@@ -38,36 +40,159 @@ reformat_annual <- function(data_file) {
   return(data_fin)
 }
 
-# count number of articles in each random grouping
-count_articles <- function(data_file){
-  data_file %>% 
-    select(q_wikidata) %>%
-    unique() %>%
-    tally() %>%
-    print()
+# set up vectors of wiki project class to remove any animal species from the random data
+wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en"), "wiki", sep = "")
+taxa_groups <- c("ACTINOPTERYGII", "AMPHIBIA", "AVES", "INSECTA", "MAMMALIA", "REPTILIA")
+
+# read in the biodiversity pages
+biodiversity_pages <- read.csv(here::here("data/class_wiki_indices/submission_2/all_iucn_titles.csv"), encoding = "UTF-8") %>%
+  filter(site %in% wiki_proj) %>%
+  filter(class_name %in% taxa_groups) %>%
+  select(title, site, class_name) %>%
+  unique() %>%
+  mutate(site = factor(site, levels = wiki_proj)) %>%
+  arrange(site)
+
+# filter the biodiversity pages for the set of languages we're using, then split up, and sort by random languages list
+split_biodiversity_pages <- split(biodiversity_pages, biodiversity_pages$site)
+
+# filter all pages from random that are species pages
+filter_species <- function(data_file, split_biodiversity_pages){
+  data_fin <- anti_join(data_file, split_biodiversity_pages, by = c("article" = "title")) %>%
+    rename("wikipedia_id" = "q_wikidata")
+  return(data_fin)
+}
+
+# merge the random species title with the all species list for each language to remove species from random - antijoin to remove those in both
+for(i in 1:length(total_monthly_views)){
+  total_monthly_views[[i]] <- filter_species(data_file = total_monthly_views[[i]], 
+                                             split_biodiversity_pages = split_biodiversity_pages[[i]]) %>%
+    select(article, wikipedia_id, year, month, av_views, date)
 }
 
 ## format for the lpi function
 # select complete time series (57 months), calculate the annual total views, and rescale each dataframe to start at 1970 for lpi
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views
-iucn_views_poll <- lapply(total_monthly_views, select_comp) # format for lpi
-iucn_views_poll <- lapply(iucn_views_poll, sum_annual) # select time series length
+iucn_views_poll <- lapply(total_monthly_views, select_comp) # select time series length
+iucn_views_poll <- lapply(iucn_views_poll, average_annual) # format for average views per month
 iucn_views_poll <- lapply(iucn_views_poll, reformat_annual) # format for lpi
 
 # set up the infile with equal weightings for each class in each language, and write to txts
-for(i in 1:length(languages)){
+for(i in 1:length(languages_save)){
   infile_df <- list()
-  write.table(iucn_views_poll[[i]], paste(languages[i], "random_data.txt", sep = "_"), row.names = FALSE)
-  infile_df[[i]] <- data.frame(FileName = paste(languages[i], "random_data.txt", sep = "_"), Group = 1, Weighting = 1)
-  write.table(infile_df[[i]], paste(languages[i], "random_all_infile_conf.txt", sep = "_"), row.names = FALSE)
+  write.table(iucn_views_poll[[i]], paste(languages_save[i], "annual_random_data.txt", sep = "_"), row.names = FALSE)
+  infile_df[[i]] <- data.frame(FileName = paste(languages_save[i], "annual_random_data.txt", sep = "_"), Group = 1, Weighting = 1)
+  write.table(infile_df[[i]], paste(languages_save[i], "annual_random_all_infile_conf.txt", sep = "_"), row.names = FALSE)
 }
 
 # run lpi trends for each language
 lpi_trends <- list()
-for(i in 1:length(languages)){
-  lpi_trends[[i]] <- LPIMain(paste(languages[i], "random_all_infile_conf.txt", sep = "_"), REF_YEAR = 1970, PLOT_MAX = 1973)
+for(i in 1:length(languages_save)){
+  lpi_trends[[i]] <- LPIMain(paste(languages_save[i], "annual_random_all_infile_conf.txt", sep = "_"), REF_YEAR = 1970, PLOT_MAX = 1973, goParallel = TRUE)
 }
 
-# save the rds for annual random trends
-saveRDS(lpi_trends, "annual_overall_10-random-languages.rds")
+# save the rds for annual random trends, and then read it back in for year reference to calculate index from separate bootstrap
+saveRDS(lpi_trends, "annual_overall_10-random-languages_random-no-species.rds")
+random_trend <- readRDS("annual_overall_10-random-languages_random-no-species.rds")
+
+# adjust each of the lambda values for random
+# adjust the year column
+for(i in 1:length(random_trend)){
+  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
+  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970) + 2016
+  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
+  
+  # calculate lambda for random
+  random_trend[[i]] <- random_trend[[i]] %>%
+    filter(date %in% c(1970:1973))
+  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:4])))
+  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
+  random_trend[[i]]$language <- languages[i]
+}
+
+# read in the view data for all taxonomic classes
+# loop through each directory and create a list of all files for users
+view_directories <- function(classes, languages, directory){
+  
+  # bring in all the files in that directory and assign to a list
+  view_files <- list()
+  for(i in 1:length(languages)){
+    view_files[[i]] <- list.files(directory, pattern = languages[i])
+  }
+  
+  # unlist the files in the correct order
+  file_order <- unlist(view_files)
+  
+  # set up empty list for files for each language
+  user_files_dir <- list()
+  user_files <- list()
+  
+  # set up each of the file directories and order consisten with the random overall trend
+  for(i in 1:length(classes)){
+    user_files[[i]] <- list.files(directory, pattern = classes[i])
+    user_files[[i]] <- user_files[[i]][order(match(user_files[[i]], file_order))]
+    user_files_dir[[i]] <- paste0(directory, "/", user_files[[i]])
+  }
+  
+  # return list of full file paths for each language
+  return(user_files_dir)
+}
+
+# Function to calculate index from lambdas selected by 'ind'
+create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
+  
+  # remove na rows
+  lambdas_new <- lambdas[complete.cases(lambdas), ]
+  
+  # select columns from lambda file to calculate mean, and build a cumprod trend
+  lambda_data <- lambdas_new[, 5:ncol(lambdas_new)]
+  this_lambdas <- lambda_data[ind, ]
+  mean_ann_lambda <- colMeans(this_lambdas, na.rm = TRUE)
+  trend <- cumprod(10^c(0, mean_ann_lambda))
+  return(trend)
+}
+
+# function for boostrapping the create_lpi function for each lambda, and generating a 95 % confidence interval
+run_each_group <- function(lambda_files, random_trend){
+  
+  # Bootstrap these to get confidence intervals
+  dbi.boot <- boot(lambda_files, create_lpi, R = 1000)
+  
+  # Construct dataframe and get mean and 95% intervals
+  boot_res <- data.frame(LPI = dbi.boot$t0)
+  boot_res$Year <- random_trend$Year[1:(nrow(random_trend))]
+  boot_res$LPI_upr <- apply(dbi.boot$t, 2, quantile, probs = c(0.975), na.rm = TRUE) 
+  boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.025), na.rm = TRUE)
+  return(boot_res)
+}
+
+## read in the lambda files to build the average random trend for each language
+# run the function with 10 languages, specifying the directory
+user_files <- view_directories(classes = "annual_random",
+                               languages = languages,
+                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/annual_lambda"))
+
+# read in all the files in groups for each language
+language_views <- list()
+system.time(for(i in 1:length(user_files)){
+  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
+})
+
+# run the boostrapping of trends for each lambda, and adjust for the random of that language
+lpi_trends_adjusted <- list()
+bound_trends <- list()
+for(i in 1:length(language_views[[1]])){
+  lpi_trends_adjusted[[i]] <- run_each_group(language_views[[1]][[i]], random_trend[[i]]) %>%
+    mutate(language = random_trend[[i]]$language) %>%
+    select(LPI, LPI_lwr, LPI_upr) %>%
+    rename("LPI_final" = "LPI") %>%
+    rename("CI_low" = "LPI_lwr") %>%
+    rename("CI_high" = "LPI_upr")
+  
+  rownames(lpi_trends_adjusted[[i]]) <- 1970:1973
+}
+
+# resave the average lambda for random views, according to bootstrap method used throughout
+saveRDS(lpi_trends_adjusted, "Z:/submission_2/overall_average-monthly_10-random-languages_from_lambda_no-species.rds")
+
