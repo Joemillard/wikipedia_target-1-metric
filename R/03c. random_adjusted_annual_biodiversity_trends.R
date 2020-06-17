@@ -18,7 +18,7 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/annua
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("annual_overall_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_average-monthly_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -37,14 +37,24 @@ for(i in 1:length(random_trend)){
 
 # bind together and plot the random trends
 rbindlist(random_trend) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
   ggplot() +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   geom_line(aes(x = Year, y = LPI_final, group = language)) +
   geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  scale_y_continuous("Random index") +
+  scale_x_continuous(NULL, breaks = c(2016, 2017, 2018, 2019, 2020), labels = c(2016, 2017, 2018, 2019, 2020)) +
   facet_wrap(~language) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# save the raw random trend
+ggsave("monthly-average_random_figure_1000-95_random-no-species.png", scale = 1.1, dpi = 350)
 
 # string for pollinating classes, plus random
-classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "annual_random")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
