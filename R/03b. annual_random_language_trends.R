@@ -8,17 +8,17 @@ library(data.table)
 source("R/00. functions.R")
 
 # read in the rds for total monthly views
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/total_monthly_views_random_10-languages.rds"))
+total_monthly_views <- readRDS("Z:/submission_2/total_views/total_monthly_views_random_10-languages.rds")
 
 # set up vector for languages, classes, and directory
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
-# aggregate views to annual level for all articles with complete time series(57 months), and filter for those with complete year
+# calculate average views per month
 sum_annual <- function(data_file){
   data_fin <- data_file %>%
-    group_by(year, article, q_wikidata) %>%
-    tally(av_views) %>%
+    group_by(q_wikidata, article, year) %>%
+    summarise(n = mean(av_views)) %>%
     ungroup() %>%
     filter(year %in% c(2016, 2017, 2018, 2019))
   return(data_fin)

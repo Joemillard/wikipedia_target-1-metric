@@ -8,17 +8,18 @@ library(data.table)
 source("R/00. functions.R")
 
 # read in the rds for total monthly views
+# GOING TO NEED NEW SCRIPT ON WHERE TOTAL VIEWS COME FROM
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
 
 # set up vector for languages, classes, and directory
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
-# aggregate views to annual level for all articles with complete time series(57 months), and filter for those with complete year
+# calculate average views per month
 sum_annual <- function(data_file){
   data_fin <- data_file %>%
-    group_by(year, article, q_wikidata) %>%
-    tally(av_views) %>%
+    group_by(q_wikidata, article, year) %>%
+    summarise(n = mean(av_views)) %>%
     ungroup() %>%
     filter(year %in% c(2016, 2017, 2018, 2019))
   return(data_fin)
@@ -64,7 +65,7 @@ for(i in 1:length(languages)){
   lpi_trends[[i]] <- LPIMain(paste(languages[i], "annual_pages_all_infile_conf.txt", sep = "_"), REF_YEAR = 1970, PLOT_MAX = 1973, goParallel = TRUE)
 }
 
-saveRDS(lpi_trends, "annual_overall_10-languages_6-class-groups_equal-weight.rds")
+saveRDS(lpi_trends, "monthly-average_annual_overall_10-languages_6-class-groups_equal-weight.rds")
 
 
 
