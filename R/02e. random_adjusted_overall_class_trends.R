@@ -41,7 +41,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -190,39 +190,38 @@ for(i in 1:length(all_lambdas)){
     mutate(taxa = classes[i])
 }
 
-# bind together the trends for that language
-bound_trends <- rbindlist(lpi_trends_adjusted)
-
-language_frame <- list()
-for(i in 1:56){
-  language_frame[[i]] <- bound_trends %>%
-    group_by(taxa) %>%
-    filter(row_number() %in% c(i:57)) %>%
-    mutate(lambda = c(0, diff(log10(LPI)))) %>%
-    mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
-    mutate(average_lambda = mean(lambda)) %>% 
-    ungroup() %>% 
-    filter(taxa != "random") %>% print(head()) %>%
-    select(taxa, conf_diff, average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
-    unique() %>%
-    mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
-    mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low"))) %>%
-    mutate(series_start = i)
+# calculate average lambda, starting at each month, and assign factor for whether average is increasing or decreasing
+all_frames <- list()
+for(j in 1:length(lpi_trends_adjusted)){
+  language_frame <- list()
+  for(i in 1:56){
+    language_frame[[i]] <- lpi_trends_adjusted[[j]] %>%
+      filter(row_number() %in% c(i:57)) %>%
+      mutate(lambda = c(0, diff(log10(LPI)))) %>%
+      mutate(average_lambda = mean(lambda)) %>% 
+      select(taxa, average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
+      unique() %>%
+      mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
+      mutate(series_start = i)
+  }
+  
+  # collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
+  all_frames[[j]] <- rbindlist(language_frame) %>%
+    select(series_start, taxa, average_lambda, factor_rate) %>%
+    unique() %>% 
+    bind_rows(data.frame("taxa" = classes[j],
+                         "average_lambda" = NA,
+                         "factor_rate" = NA,
+                         "series_start" = 57)) %>%
+    mutate(Year = random_trend[[1]]$Year) %>%
+    mutate(LPI = lpi_trends_adjusted[[j]]$LPI) %>%
+    mutate(LPI_upr = lpi_trends_adjusted[[j]]$LPI_upr) %>%
+    mutate(LPI_lwr = lpi_trends_adjusted[[j]]$LPI_lwr)
+  
 }
 
-# count the number increasing and decreasing time series for each taxa/language combination
-series_start_var <- rbindlist(language_frame) %>% 
-  mutate(Year = as.character(Year)) %>%
-  select(taxa, factor_rate, series_start) %>%
-  unique() %>%
-  bind_rows(data.frame("taxa" = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
-                       "factor_rate" = c(rep(NA, 6)),
-                       "series_start" = 57)) %>%
-  arrange(taxa, series_start) %>%
-  select(series_start, factor_rate)
-
-# plot all the class level trends
-bound_trends %>% cbind(series_start_var) %>%
+# plot all the class level trends with point for whether increasing or decreasing
+rbindlist(all_frames) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Average increase", "Average decrease"))) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
@@ -239,4 +238,4 @@ bound_trends %>% cbind(series_start_var) %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-view_random_adjusted_all-class_SAI_start-point.png", scale = 1.1, dpi = 350)
+ggsave("average-view_random_adjusted_all-class_start-point_no-random-species.png", scale = 1.1, dpi = 350)
