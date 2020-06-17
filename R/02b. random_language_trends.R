@@ -13,7 +13,7 @@ source("R/00. functions.R")
 
 # set up vector for languages, classes, and directory
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
-
+               
 # read in the rds for total monthly views
 total_monthly_views <- readRDS("Z:/submission_2/average_daily_views_random_10-languages.rds")
 
@@ -56,7 +56,6 @@ for(i in 1:length(total_monthly_views)){
 iucn_views_poll <- lapply(total_monthly_views, rescale_iucn)
 iucn_views_poll <- lapply(iucn_views_poll, select_comp) # select time series length
 iucn_views_poll <- lapply(iucn_views_poll, structure_lpi_overall) # format for lpi
-#}
 
 # set up the infile with equal weightings for each class in each language, and write to txts
 for(i in 1:length(languages)){
@@ -73,8 +72,8 @@ for(i in 1:length(languages)){
 }
 
 # save the rds file for the year values
-saveRDS(lpi_trends, "Z:/submission_2/overall_daily-views_10-random-languages.rds")
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages.rds")
+saveRDS(lpi_trends, "Z:/submission_2/overall_daily-views_10-random-languages_no-species.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -93,7 +92,7 @@ for(i in 1:length(random_trend)){
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
-view_directories <- function(classes, directory){
+view_directories <- function(classes, languages, directory){
   
   # bring in all the files in that directory and assign to a list
   view_files <- list()
@@ -150,7 +149,8 @@ run_each_group <- function(lambda_files, random_trend){
 ## read in the lambda files to build the average random trend for each language
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes = "random",
-                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda"))
+                               languages = languages,
+                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/no_species"))
 
 # read in all the files in groups for each language
 language_views <- list()
@@ -173,4 +173,4 @@ for(i in 1:length(language_views[[1]])){
 }
   
 # resave the average lambda for random views, according to bootstrap method used throughout
-saveRDS(lpi_trends_adjusted, "Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+saveRDS(lpi_trends_adjusted, "Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
