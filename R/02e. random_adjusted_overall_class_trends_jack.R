@@ -50,7 +50,7 @@ for(l in 1:length(languages_orig)){
   classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
   # read in the lambda files 
-  random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+  random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
   
   # subset the random trend for the current languages
   random_trend[[l]] <- NULL
@@ -112,6 +112,8 @@ for(l in 1:length(languages_orig)){
                                 directory,
                                 languages)
 
+  print(user_files)
+  
   # read in all the files in groups for each language
   language_views <- list()
   system.time(for(i in 1:length(user_files)){
@@ -225,22 +227,21 @@ bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  mutate(language_jack = factor(language_jack, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
+                           labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
   ggplot() +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language_jack), alpha = 0.3) +
-  #geom_smooth(aes(x = Year, y = av_index), colour = "black", span = 0.3, fill = NA) +
   geom_line(aes(x = Year, y = LPI, colour = language_jack)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_brewer(palette="Paired") +
-  scale_colour_brewer(palette="Paired") +
+  scale_fill_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
+  scale_colour_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   facet_wrap(~taxa) +
   ylab("SAI") +
   xlab(NULL) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
-ggsave("average-views_random_adjusted_all-class_SAI_jack-knife_1000_95.png", scale = 1.1, dpi = 350)
-
-
-
+ggsave("average-views_random_adjusted_all-class_SAI_jack-knife_1000_95_random-no-species.png", scale = 1.1, dpi = 350)
 
 
 
