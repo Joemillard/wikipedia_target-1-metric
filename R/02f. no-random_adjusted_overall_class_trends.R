@@ -39,7 +39,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -57,12 +57,22 @@ for(i in 1:length(random_trend)){
 }
 
 # bind together and plot the random trends
-rbindlist(random_trend) %>%
+random_trend_figure <- rbindlist(random_trend) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
   ggplot() +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   geom_line(aes(x = Year, y = LPI_final, group = language)) +
   geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  scale_y_continuous("Random index", breaks = c(0.6, 1, 1.4, 1.8)) +
+  scale_x_continuous(NULL, breaks = c(2016, 2017, 2018, 2019, 2020), labels = c(2016, 2017, 2018, 2019, 2020)) +
   facet_wrap(~language) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# save the raw random trend
+ggsave("random_figure_1000-95_random-no-species.png", scale = 1, dpi = 350)
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -218,6 +228,7 @@ bound_trends_list <- rbindlist(bound_trends_list)
 
 # plot all the class level trends
 bound_trends_list %>%
+  mutate(adjustment_col = factor(adjustment_col, levels = c("non-random", "random"), labels = c("Raw", "Random adjusted"))) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
@@ -225,11 +236,12 @@ bound_trends_list %>%
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = adjustment_col), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI, colour = adjustment_col)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_brewer(palette = "Set1") +
-  scale_colour_brewer(palette = "Set1") +
+  scale_fill_manual("Trend type", values = c("#0072B2", "#D55E00")) +
+  scale_colour_manual("Trend type", values = c("#0072B2", "#D55E00")) +
   facet_wrap(~taxa) +
   ylab("SAI") +
   xlab(NULL) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
-ggsave("average-daily_random_adjusted_all-class_SAI_1000_95_no_random.png", scale = 1.2, dpi = 350)
+ggsave("average-daily_random_adjusted_all-class_SAI_1000_95_no_random.png", scale = 1.1, dpi = 350)
