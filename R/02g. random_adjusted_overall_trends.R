@@ -221,4 +221,3 @@ all_class <- rbindlist(language_frame) %>%
   theme(panel.grid = element_blank())
 
 ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species.png", scale = 1, dpi = 350)
-
