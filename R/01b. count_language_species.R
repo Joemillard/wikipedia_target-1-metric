@@ -1,5 +1,5 @@
 ## script for calculating number of species (and number of complete time series) in each language and plotting
-# **** check corrected for only pages with complete trends ****
+# **** check corrected for only pages with complete trends and for average view files ****
 
 library(dplyr)
 library(data.table)
