@@ -66,6 +66,3 @@ for(i in 1:length(languages)){
 }
 
 saveRDS(lpi_trends, "monthly-average_annual_overall_10-languages_6-class-groups_equal-weight.rds")
-
-
-
