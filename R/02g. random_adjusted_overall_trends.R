@@ -39,7 +39,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -183,36 +183,32 @@ run_each_group <- function(lambda_files, random_trend){
 # run the boostrapping of trends for all lambda, and adjust for the random of that language
 lpi_trends_adjusted <- run_each_group(all_lambdas, random_trend = random_trend[[1]])
 
+# calculate average lambda, starting at each month, and assign factor for whether average is increasing or decreasing
 language_frame <- list()
 for(i in 1:56){
   language_frame[[i]] <- lpi_trends_adjusted %>%
     filter(row_number() %in% c(i:57)) %>%
     mutate(lambda = c(0, diff(log10(LPI)))) %>%
-    mutate(conf_diff = 1 - (mean(LPI_upr-LPI_lwr))) %>% 
     mutate(average_lambda = mean(lambda)) %>% 
-    ungroup() %>% 
-    #filter(taxa != "random") %>% print(head()) %>%
-    select(conf_diff, average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
+    select(average_lambda, Year, LPI, LPI_upr, LPI_lwr) %>%
     unique() %>%
-    mutate(factor_rate = factor(ifelse(average_lambda > 0, "increasing", "decreasing"))) %>% 
-    mutate(factor_conf = factor(ifelse(conf_diff > quantile(conf_diff, 0.5), "high", "low"))) %>%
+    mutate(factor_rate = factor(ifelse(average_lambda >= 0, "increasing/stable", "decreasing"))) %>% 
     mutate(series_start = i)
 }
-
-# count the number increasing and decreasing time series for each taxa/language combination
-series_start_var <- rbindlist(language_frame) %>% 
-  mutate(Year = as.character(Year)) %>% 
-  select(factor_rate, series_start) %>%
-  unique() %>%
-  bind_rows(data.frame("factor_rate" = NA, "series_start" = 57)) %>%
-  arrange(series_start) %>%
-  select(series_start, factor_rate)
-
-# plot all the class level trends
-lpi_trends_adjusted %>% 
-  cbind(series_start_var) %>%
+  
+# collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
+all_class <- rbindlist(language_frame) %>%
+  select(series_start, average_lambda, factor_rate) %>%
+  unique() %>% 
+  bind_rows(data.frame("average_lambda" = NA,
+                        "factor_rate" = NA,
+                        "series_start" = 57)) %>%
+  mutate(Year = random_trend[[1]]$Year) %>%
+  mutate(LPI = lpi_trends_adjusted$LPI) %>%
+  mutate(LPI_upr = lpi_trends_adjusted$LPI_upr) %>%
+  mutate(LPI_lwr = lpi_trends_adjusted$LPI_lwr) %>%
   mutate(Year = as.numeric(Year)) %>%
-  mutate(factor_rate = factor(factor_rate, levels = c("increasing", "decreasing"), labels = c("Average increase", "Average decrease"))) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   ggplot() +
   geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 2) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
@@ -224,5 +220,5 @@ lpi_trends_adjusted %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting.png", scale = 1, dpi = 350)
+ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species.png", scale = 1, dpi = 350)
 
