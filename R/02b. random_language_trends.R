@@ -150,7 +150,7 @@ run_each_group <- function(lambda_files, random_trend){
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes = "random",
                                languages = languages,
-                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/no_species"))
+                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/no_species_random"))
 
 # read in all the files in groups for each language
 language_views <- list()
