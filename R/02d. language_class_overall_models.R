@@ -134,10 +134,11 @@ for(i in 1:length(avg_lambdas)){
 }
 
 # rbind together the final dataframes
-final_bound <- rbindlist(final_bound)
+final_bound <- rbindlist(final_bound) %>%
+  filter(language == "^en_")
 
 # build the models - to work on!!
-model_1 <- lm(av_lambda ~ taxonomic_class * language, data = final_bound)
+model_1 <- lm(av_lambda ~ taxonomic_class, data = final_bound)
 summary(model_1)
 
 
