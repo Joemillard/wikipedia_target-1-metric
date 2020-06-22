@@ -10,10 +10,12 @@ library(patchwork)
 library(here)
 
 # read in the rds for total monthly views - change this to average views
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2//user_trends/total_monthly_views_10-languages.rds"))
+total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
 
 # set up vector for languages, classes, and directory
-languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
+languages_short <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
+languages_full <- c("Spanish", "French", "German", "Japanese", "Italian", 
+               "Arabic", "Russian", "Portuguese", "Chinese (Mandarin)", "English")
 classes <- c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia")
 
 # function for counting the number of species in each class/language grouping
@@ -37,16 +39,15 @@ run_count_total <- function(data_file, languages, classes){
   # bind together, assign the columns to the list and return 
   total_species <- rbindlist(total_species)
   colnames(total_species) <- classes
-  total_species$language <- languages
+  total_species$language <- languages_short
   return(total_species)
 }
 
-## plot number of species for each language, with separate factor order on the x axis - slice for each language
-# to update for those with complete time series
+## plot number of species for each language, for all series, with separate factor order on the x axis - slice for each language
 ind_species_plot <- list()
 step <- 6
-for(i in 1:length(languages)){
-  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages, classes) %>%
+for(i in 1:length(languages_short)){
+  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages_short, classes) %>%
     reshape2::melt(id  = "language") %>%
     arrange(language) %>%
     group_by(language) %>%
@@ -54,7 +55,7 @@ for(i in 1:length(languages)){
     ungroup() %>%
     arrange(desc(total)) %>% 
     slice((step-5):step) %>% print() %>%
-    mutate(language = factor(language, levels = languages, 
+    mutate(language = factor(language, levels = languages_short, 
                             labels = c("Spanish", "French", "German", "Japanese", "Italian", 
                                       "Arabic", "Russian", "Portuguese", "Chinese (Mandarin)", "English"))) %>%
     mutate(language = fct_reorder(language, -value)) %>%
@@ -76,6 +77,7 @@ for(i in 1:length(languages)){
 
 # iterate through each plot, and add it to previous for patchwork
 combine_plots <- function(plot_list){
+  total_species_plot <- list()
   for(i in 1:length(plot_list)){
     if(i == 1){
       total_species_plot <- plot_list[[i]]
@@ -139,6 +141,8 @@ for(i in 1:length(total_monthly_views)) {
 }
 
 # count number of complete series for each language/class combination
+series_frame <- list()
+all_series_frame <- list()
 for(i in 1:length(total_months)){
   for(j in 1:length(total_months[[i]])){
     counter <- 0 # set up the counter
@@ -149,11 +153,56 @@ for(i in 1:length(total_months)){
       }
     }
     proportion <- counter / total_number # calculate the proportion of complete series for that class
-    print(paste(languages[i], classes[j], counter, total_number, proportion)) # print the class, number of complete series, the total number of articles, and proportion complete
+    series_frame[[j]] <- data.frame("languages"= languages_short[i], "classes" = classes[j], counter, total_number, proportion) # print the class, number of complete series, the total number of articles, and proportion complete
   }
+  all_series_frame[[i]] <- rbindlist(series_frame)
 }
 
+# name each set of complete series dataframes according to the language vector
+names(all_series_frame) <- languages_short
 
+
+# create new vector for order of languages according to complete series
+language_order <- rbindlist(all_series_frame) %>%
+  group_by(languages) %>%
+  summarise(total = sum(total_number)) %>%
+  arrange(-total) %>%
+  pull(languages)
+
+# order names by the new ordered vector
+all_series_frame <- all_series_frame[c(language_order)]
+
+# update the full vector strings for each language
+updated_language_order <- c("English", "Spanish", "French", "Portuguese", "Chinese", 
+           "Italian", "German", "Russian", "Arabic", "Japanese")
+
+# update plot for those in complete series i.e. data for every month
+## plot number of species for each language, for all series, with separate factor order on the x axis - slice for each language
+full_series_plot <- list()
+for(i in 1:length(all_series_frame)){
+  full_series_plot[[i]] <- all_series_frame[[i]] %>%
+    mutate(languages = factor(languages, levels = language_order[i], labels = updated_language_order[i])) %>%
+    mutate(classes = fct_reorder(classes, -total_number)) %>%    
+    ggplot() +
+    geom_bar(aes(x = classes, y = total_number), position = "identity", stat = "identity") +
+    geom_bar(aes(x = classes, y = counter, fill = "Complete series"), position = "identity", stat = "identity") +
+    facet_wrap(~languages) +
+    xlab(NULL) +
+    scale_fill_manual(NULL, values = "red") +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, (max(all_series_frame[[i]]$total_number) + max(all_series_frame[[i]]$total_number*0.1)))) +
+    ylab(NULL) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+          panel.grid.minor = element_blank(), 
+          axis.title.y = element_text(size = 13, vjust = 0.9),
+          legend.position = "none")
+}
+
+# run the function to combine all plots, and add the column layout
+total_species_series <- {combine_plots(full_series_plot) + plot_layout(ncol = 5)}
+  
+# save the plot for number of complete series
+ggsave("complete_series_count.png", scale = 1.2, dpi = 350)
 
 
 
