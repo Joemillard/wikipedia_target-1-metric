@@ -12,7 +12,7 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/annual_lambda")
+directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/annual_lambda")
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
@@ -51,7 +51,7 @@ rbindlist(random_trend) %>%
   theme(panel.grid = element_blank())
 
 # save the raw random trend
-ggsave("monthly-average_random_figure_1000-95_random-no-species.png", scale = 1.1, dpi = 350)
+ggsave("monthly-average_random_figure_1000-95_random-no-species_2.png", scale = 1.1, dpi = 350)
 
 # string for pollinating classes, plus random
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "annual_random")
@@ -154,18 +154,23 @@ fin_bound_trends <- rbindlist(bound_trends)
 # plot all the class level trends
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
+  mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "annual_random"),
+                       labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles", "Random"))) %>%
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
+                           labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.3) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.4) +
   geom_line(aes(x = Year, y = LPI, colour = language)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_brewer(palette="Paired") +
-  scale_colour_brewer(palette="Paired") +
+  scale_fill_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
+  scale_colour_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   facet_wrap(~taxa, scales = "free_y") +
   ylab("SAI") +
   xlab(NULL) +
-  theme_bw()
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
-ggsave("random_annual_adjusted_class_SAI_free_1000_95.png", scale = 1.3, dpi = 350)
+ggsave("random-adjusted_monthly-average_class_1000_95_random-no-species.png", scale = 1.3, dpi = 350)
 
 
 # figure for overall changes of different groupings
