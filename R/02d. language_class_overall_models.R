@@ -9,13 +9,13 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/")
+directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
 # read in the string of languages - original order sorted alphabetically for files read in - CHECK THAT THIS SHOULD BE SORTED
 languages <- sort(c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_"))
 
 # read in the lambda files 
-random_trend <- readRDS("overall_10-random-languages.rds")
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -23,7 +23,7 @@ for(i in 1:length(random_trend)){
   random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
   random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
   random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
-
+  
   # calculate lambda for random
   random_trend[[i]] <- random_trend[[i]] %>%
     filter(date %in% c(1977:2033))
@@ -32,12 +32,20 @@ for(i in 1:length(random_trend)){
   random_trend[[i]]$language <- languages[i]
 }
 
-rbindlist(random_trend) %>%
+# bind together and plot the random trends
+random_trend_figure <- rbindlist(random_trend) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
   ggplot() +
-    geom_line(aes(x = Year, y = LPI_final, group = language)) +
-    geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-    facet_wrap(~language) +
-    theme_bw()
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+  geom_line(aes(x = Year, y = LPI_final, group = language)) +
+  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  scale_y_continuous("Random index", breaks = c(0.6, 1, 1.4, 1.8)) +
+  scale_x_continuous(NULL, breaks = c(2016, 2017, 2018, 2019, 2020), labels = c(2016, 2017, 2018, 2019, 2020)) +
+  facet_wrap(~language) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
 # string for pollinating classes
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
@@ -93,6 +101,7 @@ model_format <- function(data_file, taxa, language){
 
 # calculate average for each row and reformat with language and class included
 average_lambda <- function(data_file, taxa){
+  
   # builds subset of columns to calculate average over
   data_fin <- data_file
   data_subset <- data_file[, 5:ncol(data_fin)]
@@ -128,7 +137,7 @@ for(i in 1:length(avg_lambdas)){
 final_bound <- rbindlist(final_bound)
 
 # build the models - to work on!!
-model_1 <- lmer(av_lambda ~ taxonomic_class + (1|language), data = final_bound)
+model_1 <- lm(av_lambda ~ taxonomic_class * language, data = final_bound)
 summary(model_1)
 
 
