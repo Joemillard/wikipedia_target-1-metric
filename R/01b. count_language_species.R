@@ -68,7 +68,7 @@ for(i in 1:length(languages_short)){
       ylab(NULL) +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
-            panel.grid.minor = element_blank(), 
+            panel.grid = element_blank(), 
             axis.title.y = element_text(size = 13, vjust = 0.9))
     
   # step up slice of data for languages
@@ -115,14 +115,14 @@ class_views_plot <- rbindlist(class_views) %>%
     xlab("") +
     ylab("Total species") +
     theme_bw() +
-    theme(panel.grid.minor = element_blank(), 
+    theme(panel.grid = element_blank(), 
           axis.title.y = element_text(size = 13))
 
 # combine the plots for the number of species in each class and the number of species in each language
 total_species_language <- class_views_plot + total_species_plot + plot_layout(ncol = 1)
 
 # save the combined plot
-ggsave("outputs/total_language_species.png", scale = 1.3, dpi = 350)
+ggsave("outputs/total_language_species_2.png", scale = 1.3, dpi = 350)
 
 ## plot for complete time series
 # count number of months of views per article
