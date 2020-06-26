@@ -190,6 +190,9 @@ final_bound <- rbindlist(final_bound) %>%
 
 ## build model with language as random effect and sample from covariance matrix
 model_1 <- lmer(av_lambda ~ taxonomic_class + (1|language), data = final_bound)
+model_1_null <- lmer(av_lambda ~ 1 + (1|language), data = final_bound)
+AIC(model_1, model_1_null)
+
 summary(model_1)
 
 # call in MASS here specifically for sampleing
@@ -210,7 +213,7 @@ prediction_data <- final_bound %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-preds.emp <- sapply(X = 1:1000, iterate_covar_sai, model_1, prediction_data = prediction_data)
+preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_1, prediction_data = prediction_data)
 
 # extract the median, upper interval, and lower interval for samples
 preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
