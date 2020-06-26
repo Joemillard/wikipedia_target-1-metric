@@ -231,19 +231,21 @@ taxa_plot <- cbind(prediction_data, preds.emp.summ) %>%
                                   labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   mutate(taxonomic_class = factor(taxonomic_class)) %>%
   mutate(taxonomic_class = fct_reorder(taxonomic_class, Median)) %>%
-  
   ggplot() +
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper), width = 0.1) +
-  geom_point(aes(x = taxonomic_class, y = Median))+
+  geom_point(aes(x = taxonomic_class, y = Median)) + 
+  scale_y_continuous("Monthly rate of change", breaks = c(-0.0015, -0.001, -0.0005, 0, 0.0005, 0.001), labels = c("-0.0015", "-0.001", "-0.0005", "0", "0.0005", "0.001")) +
   theme_bw() +
   theme(panel.grid = element_blank(), 
         axis.title.x = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1))
 
+ggsave("class-rate-of-change_language-random-effect_10000_95.png", scale = 0.8, dpi = 400)
+
 ## approach for just english language to check models - gives mostly same output as before
-english_prediction <- final_bound %>%
-  filter(language == "\\^en_")
+english_prediction <- final_bound #%>%
+  #filter(language == "\\^en_")
 
 model_2 <- lm(av_lambda ~ taxonomic_class, data = english_prediction)
 
@@ -317,7 +319,7 @@ prediction_data <- final_bound %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-preds.emp <- sapply(X = 1:1000, iterate_covar_sai, model_4, prediction_data = prediction_data)
+preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_4, prediction_data = prediction_data)
 
 # extract the median, upper interval, and lower interval for samples
 preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
@@ -348,7 +350,7 @@ taxa_plot <- cbind(prediction_data, preds.emp.summ) %>%
         axis.ticks.x = element_blank())
 
 # save the plot for interaction of language and class
-ggsave("taxa_language_rate-of-change_species-random_covariance-mat.png", scale = 1.1, dpi = 350)
+ggsave("taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale = 1.1, dpi = 350)
 
 ## retrieve whether the species is utilised through IUCN data
 rredlist::rl_threats(name = "Panthera leo", key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d")
