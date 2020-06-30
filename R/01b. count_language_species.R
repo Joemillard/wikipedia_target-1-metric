@@ -266,10 +266,7 @@ bar_colours <- list(c("#000000"),
                     c("#000000"),
                     c("#000000"))
 
-# function for y value form
-
-
-
+# plot top 5 species for each language, including all classes 
 for(i in 1:length(top_species)){
   top_species_plot[[i]] <- inner_join(top_species[[i]], latin_species, by = c("q_wikidata")) %>%
     mutate(species = fct_reorder(species, -total_views)) %>%
@@ -297,20 +294,99 @@ top_viewed_species <- {combine_plots(top_species_plot) + plot_layout(ncol = 5)}
 # save plot for top 5 number of views
 ggsave("top_5_species.png", scale = 1.1, dpi = 350)
 
-rbindlist(top_species) %>%
-  inner_join(latin_species, by = c("q_wikidata")) %>%
-  mutate(species = fct_reorder(species, -total_views)) %>%
-  mutate(class = factor(class, levels = c("Mammalia", "Reptilia", "Aves", "Actinopterygii", "Insecta"))) %>%
-  ggplot() +
-    geom_bar(aes(x = species, y = total_views, fill = class), stat = "identity") +
-    #scale_y_continuous(expand = c(0, 0), limits = c(0, (max(top_views[[i]]$total_views) + max(top_views[[i]]$total_views*0.1)))) +
-    #scale_fill_manual("Taxonomic class", values = bar_colours[[i]]) +
-    facet_wrap(~language, scales = "free_x") +
-    ylab(NULL) +
+# average views per class plot
+# function for calculating average views for each class for a given language
+calc_average <- function(data_file){
+  data_fin <- data_file %>%
+    group_by(class, q_wikidata) %>% 
+    summarise(total_views = sum(av_views)) %>% 
+    ungroup() %>%
+    group_by(class) %>%
+    summarise(average_views = median(total_views)) %>%
+    ungroup() %>%
+    arrange(-average_views)
+  return(data_fin)
+}
+
+# run function to calculate average views per class over all languages
+average_classes <- lapply(bound_views, calc_average)
+
+# add column for language
+for(i in 1:length(average_classes)){
+  average_classes[[i]]$language <- languages_full[i]
+}
+
+names(average_classes) <- languages_full
+average_classes <- average_classes[updated_language_order]
+
+
+# build plot for median number of views per class/language combination
+av_series_plot <- list()
+for(i in 1:length(average_classes)){
+  av_series_plot[[i]] <- average_classes[[i]] %>% print() %>%
+    mutate(class = fct_reorder(class, -average_views, median)) %>%
+    ggplot() +
+    geom_bar(aes(x = class, y = average_views), position = "identity", stat = "identity") +
+    facet_wrap(~language) +
     xlab(NULL) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0, (max(average_classes[[i]]$average_views) + max(average_classes[[i]]$average_views*0.1)))) +
+    ylab(NULL) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
-      panel.grid = element_blank(), 
-      axis.title.y = element_text(size = 13, vjust = 0.9),
+          panel.grid = element_blank(), 
+          axis.title.y = element_text(size = 13, vjust = 0.9),
+          legend.position = "none")
+}
+
+# run the function to combine all plots, and add the column layout
+av_species_series <- {combine_plots((av_series_plot[[1]] + ylab("Total median views")) + av_series_plot[2:10]) + plot_layout(ncol = 5)}
+
+# boxplot of distribution
+# function for calculating average views for each class for a given language
+set_up_box_plot <- function(data_file){
+  data_fin <- data_file %>%
+    group_by(class, q_wikidata) %>% 
+    summarise(total_views = sum(av_views)) %>% 
+    ungroup()
+  return(data_fin)
+}
+
+# run function to calculate average views per class over all languages
+box_classes <- lapply(bound_views, set_up_box_plot)
+
+# add column for language
+for(i in 1:length(box_classes)){
+  box_classes[[i]]$language <- languages_full[i]
+}
+
+names(box_classes) <- languages_full
+box_classes <- box_classes[updated_language_order]
+
+# build plot for boxplot of views per class/language combination
+class_box_plot <- list()
+for(i in 1:length(box_classes)){
+class_box_plot[[i]] <- box_classes[[i]] %>%
+  mutate(class = fct_reorder(class, -total_views, median)) %>%
+  ggplot() +
+    geom_boxplot(aes(class, log10(total_views))) +
+    facet_wrap(~language) +
+    scale_y_continuous(limits = c(0, 7.5), breaks = c(0, 2, 4, 6), labels = c("1", "100", "10,000", "1,000,000")) +
+    xlab(NULL) +
+    ylab(NULL) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+      panel.grid = element_blank(),
+      axis.text.y = element_blank(),
+      axis.title.y = element_text(size = 11, vjust = 0.9),
       legend.position = "none")
-  
+}
+
+# run the function to combine all plots, and add the column layout
+box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article views") + theme(axis.text.y = element_text(angle = 45))) + 
+                                    class_box_plot[2:5] + 
+                                    (class_box_plot[[6]] + ylab("Total article views") + theme(axis.text.y = element_text(angle = 45))) +
+                                    class_box_plot[7:10]) +
+                                    plot_layout(ncol = 5)}
+
+
+ggsave("total_view_distribution.png", scale = 1.1, dpi = 350)
