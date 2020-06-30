@@ -206,6 +206,7 @@ ggsave("complete_series_count.png", scale = 1.2, dpi = 350)
 # plot for the top 5 viewed species for each language
 bound_views <- lapply(total_monthly_views, rbindlist)
 
+# function for calculating the top 5 viewed species for each language
 calc_top <- function(data_file){
   data_fin <- data_file %>%
     group_by(class, q_wikidata, article) %>%
@@ -216,8 +217,10 @@ calc_top <- function(data_file){
   return(data_fin)
 }
 
+# run function for calculating top 5 species for each language
 top_views <- lapply(bound_views, calc_top)
 
+# add the language to each dataframe of top 5 species
 top_species <- list() 
 for(i in 1:length(top_views)){
   top_species[[i]] <- top_views[[i]] %>%
@@ -230,7 +233,7 @@ top_species_frame <- rbindlist(top_species) %>%
   select(q_wikidata) %>%
   unique()
 
-# make dataframe for all unique species in Latin binomial with q_wikidata
+# make dataframe for all unique species in Latin binomial with q_wikidata - note order of species vector
 latin_species <- data.frame("q_wikidata" = top_species_frame$q_wikidata,
                             "species" = c("Homo sapiens",
                                           "Ailuropoda melanoleuca",
@@ -255,6 +258,8 @@ latin_species <- data.frame("q_wikidata" = top_species_frame$q_wikidata,
 
 # bind Latin binomial species on to each frame and then plot
 top_species_plot <- list()
+
+# create list of colours for each class
 bar_colours <- list(c("#000000"),
                     c("#000000"),
                     c("#000000", "#E69F00", "#56B4E9"),
@@ -286,9 +291,11 @@ for(i in 1:length(top_species)){
         legend.position = "none")
 }
 
+# add full vectors for language, using the same order, and then order by those with most species
 names(top_species_plot) <- languages_full
 top_species_plot <- top_species_plot[updated_language_order]
-  
+
+# combine the plot for top 5 species
 top_viewed_species <- {combine_plots(top_species_plot) + plot_layout(ncol = 5)} 
 
 # save plot for top 5 number of views
@@ -316,9 +323,9 @@ for(i in 1:length(average_classes)){
   average_classes[[i]]$language <- languages_full[i]
 }
 
+# add full vectors for language, using the same order, and then order by those with most species
 names(average_classes) <- languages_full
 average_classes <- average_classes[updated_language_order]
-
 
 # build plot for median number of views per class/language combination
 av_series_plot <- list()
@@ -359,6 +366,7 @@ for(i in 1:length(box_classes)){
   box_classes[[i]]$language <- languages_full[i]
 }
 
+# add full vectors for language, using the same order, and then order by those with most species
 names(box_classes) <- languages_full
 box_classes <- box_classes[updated_language_order]
 
