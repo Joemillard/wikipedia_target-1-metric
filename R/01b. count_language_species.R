@@ -15,7 +15,7 @@ total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/
 # set up vector for languages, classes, and directory
 languages_short <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 languages_full <- c("Spanish", "French", "German", "Japanese", "Italian", 
-               "Arabic", "Russian", "Portuguese", "Chinese (Mandarin)", "English")
+               "Arabic", "Russian", "Portuguese", "Chinese", "English")
 classes <- c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia")
 
 # function for counting the number of species in each class/language grouping
@@ -161,7 +161,6 @@ for(i in 1:length(total_months)){
 # name each set of complete series dataframes according to the language vector
 names(all_series_frame) <- languages_short
 
-
 # create new vector for order of languages according to complete series
 language_order <- rbindlist(all_series_frame) %>%
   group_by(languages) %>%
@@ -204,6 +203,114 @@ total_species_series <- {combine_plots(full_series_plot) + plot_layout(ncol = 5)
 # save the plot for number of complete series
 ggsave("complete_series_count.png", scale = 1.2, dpi = 350)
 
+# plot for the top 5 viewed species for each language
+bound_views <- lapply(total_monthly_views, rbindlist)
+
+calc_top <- function(data_file){
+  data_fin <- data_file %>%
+    group_by(class, q_wikidata, article) %>%
+    summarise(total_views = sum(av_views)) %>%
+    ungroup() %>%
+    arrange(-total_views) %>%
+    slice(0:5)
+  return(data_fin)
+}
+
+top_views <- lapply(bound_views, calc_top)
+
+top_species <- list() 
+for(i in 1:length(top_views)){
+  top_species[[i]] <- top_views[[i]] %>%
+    mutate(article = fct_reorder(article, -total_views)) %>% 
+    mutate(language = languages_full[i])
+}
+
+# all unique species IDs
+top_species_frame <- rbindlist(top_species) %>%
+  select(q_wikidata) %>%
+  unique()
+
+# make dataframe for all unique species in Latin binomial with q_wikidata
+latin_species <- data.frame("q_wikidata" = top_species_frame$q_wikidata,
+                            "species" = c("Homo sapiens",
+                                          "Ailuropoda melanoleuca",
+                                          "Canis lupus",
+                                          "Panthera tigris",
+                                          "Panthera onca",
+                                          "Phascolarctos cinereus",
+                                          "Ornithorhynchus anatinus",
+                                          "Natrix natrix",
+                                          "Turdus merula",
+                                          "Balaenoptera musculus",
+                                          "Seriola quinqueradiata",
+                                          "Orcinus orca",
+                                          "Paguma larvata",
+                                          "Nyctereutes procyonoides",
+                                          "Myocastor coypus",
+                                          "Mantis religiosa",
+                                          "Panthera pardus",
+                                          "Acinonyx Jubatus",
+                                          "Gulo gulo",
+                                          "Prionailurus bengalensis"))
+
+# bind Latin binomial species on to each frame and then plot
+top_species_plot <- list()
+bar_colours <- list(c("#000000"),
+                    c("#000000"),
+                    c("#000000", "#E69F00", "#56B4E9"),
+                    c("#000000", "#009E73"),
+                    c("#000000", "#F0E442"),
+                    c("#000000"),
+                    c("#000000"),
+                    c("#000000"),
+                    c("#000000"),
+                    c("#000000"))
+
+# function for y value form
 
 
 
+for(i in 1:length(top_species)){
+  top_species_plot[[i]] <- inner_join(top_species[[i]], latin_species, by = c("q_wikidata")) %>%
+    mutate(species = fct_reorder(species, -total_views)) %>%
+    mutate(class = factor(class, levels = c("Mammalia", "Reptilia", "Aves", "Actinopterygii", "Insecta"))) %>%
+    print() %>%
+      ggplot() +
+      geom_bar(aes(x = species, y = total_views, fill = class), stat = "identity") +
+      scale_y_continuous(expand = c(0, 0), labels = function(x) format(x, scientific = FALSE, big.mark=","), limits = c(0, (max(top_views[[i]]$total_views) + max(top_views[[i]]$total_views*0.1)))) +
+      scale_fill_manual("Taxonomic class", values = bar_colours[[i]]) +
+      facet_wrap(~language) +
+      ylab(NULL) +
+      xlab(NULL) +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+        panel.grid = element_blank(), 
+        axis.title.y = element_text(size = 13, vjust = 0.9),
+        legend.position = "none")
+}
+
+names(top_species_plot) <- languages_full
+top_species_plot <- top_species_plot[updated_language_order]
+  
+top_viewed_species <- {combine_plots(top_species_plot) + plot_layout(ncol = 5)} 
+
+# save plot for top 5 number of views
+ggsave("top_5_species.png", scale = 1.1, dpi = 350)
+
+rbindlist(top_species) %>%
+  inner_join(latin_species, by = c("q_wikidata")) %>%
+  mutate(species = fct_reorder(species, -total_views)) %>%
+  mutate(class = factor(class, levels = c("Mammalia", "Reptilia", "Aves", "Actinopterygii", "Insecta"))) %>%
+  ggplot() +
+    geom_bar(aes(x = species, y = total_views, fill = class), stat = "identity") +
+    #scale_y_continuous(expand = c(0, 0), limits = c(0, (max(top_views[[i]]$total_views) + max(top_views[[i]]$total_views*0.1)))) +
+    #scale_fill_manual("Taxonomic class", values = bar_colours[[i]]) +
+    facet_wrap(~language, scales = "free_x") +
+    ylab(NULL) +
+    xlab(NULL) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+      panel.grid = element_blank(), 
+      axis.title.y = element_text(size = 13, vjust = 0.9),
+      legend.position = "none")
+  
