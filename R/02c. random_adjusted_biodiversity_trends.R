@@ -105,24 +105,42 @@ smooth_series <- function(X){
   index <- cumprod(10^c(0, X))
 
   x_range <- 1:length(index)
-  y.loess <- loess(index~x_range, span = 0.3)
+  y.loess <- loess(index~x_range, span = 0.39)
   data_fin <- predict(y.loess, data.frame(x_range))
   return(data_fin)
-  
 }
+
+# convert back to lambda
+create_lambda <- function(X){
+  lambda <- c(1, diff(log10(X)))
+  return(lambda)
+}
+
+# convert back to index, run the smooth for random adjusted lambda, and then convert back the lamda
+smooth_all_groups <- function(data_file){
   
+  # smooth the series for each row (species)
+  smoothed_indices <- apply(X = data_file[nrow(data_file),5:ncol(data_file)], 1, FUN = smooth_series)
 
-smoothed_indices <- apply(X = all_lambdas[[1]][[1]][1:100,5:ncol(all_lambdas[[1]][[1]])], 1, FUN = smooth_series)
+  # convert the smoothed series back into lambda, and then transpose back to years as columns
+  smoothed_lambda <- apply(smoothed_indices, 2, FUN = create_lambda) %>%
+    t()
 
-t(smoothed_indices)
-
-y.loess <- loess(jittered_n~x_range, span = 0.25)
-article_subframe[[k]]$smoothed_values <- predict(y.loess, data.frame(x_range))
+  # add back in the original column names
+  colnames(smoothed_lambda) <- colnames(data_file)[4:ncol(data_file)]
   
+  # bind the adjusted smoothed lambda back onto the first four columns
+  smoothed_lambda <- cbind(data_file[,1:3], smoothed_lambda)
+  
+  return(smoothed_lambda)
 
+}
 
-
-
+smoothed_adjusted_lamda <- list()
+for(i in 1:length(all_lambdas)){
+  smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
+  print(i)
+}
 
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
@@ -155,9 +173,9 @@ run_each_group <- function(lambda_files, random_trend){
 # run the boostrapping of trends for each lambda, and adjust for the random of that language
 lpi_trends_adjusted <- list()
 bound_trends <- list()
-for(i in 1:length(all_lambdas)){
-  for(j in 1:length(all_lambdas[[i]])){
-    lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trend[[j]]) %>%
+for(i in 1:length(smoothed_adjusted_lamda)){
+  for(j in 1:length(smoothed_adjusted_lamda[[i]])){
+    lpi_trends_adjusted[[j]] <- run_each_group(smoothed_adjusted_lamda[[i]][[j]], random_trend[[j]]) %>%
       mutate(language = random_trend[[j]]$language)
     
   }
@@ -184,7 +202,7 @@ fin_bound_trends %>%
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_colour_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
-  facet_grid(language~taxa, scales = "free_y") +
+  facet_grid(~taxa, scales = "free_y") +
   ylab("SAI") +
   xlab(NULL) +
   theme_bw() +
