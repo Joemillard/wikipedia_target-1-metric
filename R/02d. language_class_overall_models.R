@@ -280,12 +280,12 @@ no_french_prediction_data <- no_final_bound_french %>%
 no_french_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_1, prediction_data = no_french_prediction_data)
 
 # extract the median, upper interval, and lower interval for samples
-no_french_preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
-                             Upper = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
-                             Lower = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+no_french_preds.emp.summ <- data.frame(Median = apply(X = no_french_preds.emp, MARGIN = 1, FUN = median),
+                             Upper = apply(X = no_french_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                             Lower = apply(X = no_french_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
 
 # plot the sampled effects from covariance matrix
-taxa_plot <- cbind(no_french_prediction_data, preds.emp.summ) %>%
+taxa_plot <- cbind(no_french_prediction_data, no_french_preds.emp.summ) %>%
   dplyr::select(-av_lambda) %>%
   mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                                   labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
@@ -308,10 +308,11 @@ model_2 <- lm(av_lambda ~ taxonomic_class, data = final_bound)
 
 predicted_values <- predict(model_2, final_bound, se.fit = TRUE)
 
-final_bound$predicted_values <- predicted_values$fit
-final_bound$predicted_values_se <- predicted_values$se.fit
+final_bound_class <- final_bound
+final_bound_class$predicted_values <- predicted_values$fit
+final_bound_class$predicted_values_se <- predicted_values$se.fit
 
-fin_frame_6 <- final_bound %>%
+fin_frame_6 <- final_bound_class %>%
   dplyr::select(taxonomic_class, predicted_values, predicted_values_se) %>%
   unique()
 
@@ -371,20 +372,20 @@ ggsave("taxa_language_rate-of-change_3.png", scale = 1.1, dpi = 350)
 model_4 <- lmer(av_lambda ~ taxonomic_class * language + (1|q_wikidata), data = final_bound)
 summary(model_4)
 
-prediction_data <- final_bound %>%
+prediction_data_inter_random <- final_bound %>%
   dplyr::select(taxonomic_class, av_lambda, language) %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_4, prediction_data = prediction_data)
+inter_random_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_4, prediction_data = prediction_data_inter_random)
 
 # extract the median, upper interval, and lower interval for samples
-preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
-                             Upper = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
-                             Lower = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+inter_random_preds.emp.summ <- data.frame(Median = apply(X = inter_random_preds.emp, MARGIN = 1, FUN = median),
+                             Upper = apply(X = inter_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                             Lower = apply(X = inter_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
 
 # plot the sampled effects from covariance matrix
-taxa_plot <- cbind(prediction_data, preds.emp.summ) %>%
+taxa_plot <- cbind(prediction_data_inter_random, inter_random_preds.emp.summ) %>%
   dplyr::select(-av_lambda) %>%
   mutate(taxonomic_class = factor(taxonomic_class)) %>%
   mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
