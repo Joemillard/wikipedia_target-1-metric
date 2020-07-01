@@ -124,18 +124,73 @@ for(i in 1:length(language_views)){
   all_lambdas[[i]] <- adj_lambdas
 }
 
+#### additional smoothing of the random adjusted indices
+
+# smooth the adjusted random lambda for each species
+# iterate through all the articles of that class/language
+smooth_series <- function(X){
+  
+  # create index
+  index <- cumprod(10^c(0, X))
+  
+  # smooth the index
+  x_range <- 1:length(index)
+  y.loess <- loess(index~x_range, span = 0.30)
+  data_fin <- predict(y.loess, data.frame(x_range))
+  return(data_fin)
+}
+
+# convert the index back to lambda
+create_lambda <- function(X){
+  lambda <- c(1, diff(log10(X)))
+  return(lambda)
+}
+
+# convert back to index, run the smooth for random adjusted lambda, and then convert back the lamda
+smooth_all_groups <- function(data_file){
+  
+  # set up an empty list for smoothed values
+  smoothed_indices <- list()
+  
+  # smooth the series for each row (species)
+  for(i in 1:nrow(data_file)){
+    smoothed_indices[[i]] <- smooth_series(X = as.numeric(as.vector(data_file[i, 5:ncol(data_file)])))
+    smoothed_indices[[i]] <- create_lambda(smoothed_indices[[i]])
+  }
+  
+  smoothed_lambda <- as.data.frame(do.call(rbind, smoothed_indices))
+  
+  # add back in the original column names
+  colnames(smoothed_lambda) <- colnames(data_file)[4:ncol(data_file)]
+  
+  # bind the adjusted smoothed lambda back onto the first four columns
+  smoothed_lambda <- cbind(data_file[,1:3], smoothed_lambda)
+  
+  return(smoothed_lambda)
+  
+}
+
+# run the smoothing of lamdas over each class/language combination
+smoothed_adjusted_lamda <- list()
+for(i in 1:length(all_lambdas)){
+  smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
+  print(i)
+}
+
+####
+
 # merge each lambda file with the speciesSSet ID from view data
 merge_lambda <- list()
 merge_fin_lambda <- list()
-for(i in 1:length(all_lambdas)){
-  for(j in 1:length(all_lambdas[[i]])){
-    merge_lambda[[j]] <- inner_join(iucn_views_poll[[j]][[i]], all_lambdas[[i]][[j]], by = "SpeciesSSet") %>%
+for(i in 1:length(smoothed_adjusted_lamda)){
+  for(j in 1:length(smoothed_adjusted_lamda[[i]])){
+    merge_lambda[[j]] <- inner_join(iucn_views_poll[[j]][[i]], smoothed_adjusted_lamda[[i]][[j]], by = "SpeciesSSet") %>%
       mutate(taxa = classes[i]) %>%
       mutate(language = languages[j]) %>%
       select(-taxa, -language)
     
     # merge each set of lambda files with the q_wikidata and add columns for class and language
-    print(nrow(all_lambdas[[i]][[j]]) - nrow(merge_lambda[[j]]))
+    print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
   }
   merge_fin_lambda[[i]] <- merge_lambda
 }
@@ -193,8 +248,13 @@ final_bound <- rbindlist(final_bound) %>%
   mutate(q_wikidata = factor(q_wikidata))
 
 ## build model with language as random effect and sample from covariance matrix
-model_1 <- lmer(av_lambda ~ taxonomic_class + (1|language), data = final_bound)
-model_1_null <- lmer(av_lambda ~ 1 + (1|language), data = final_bound)
+# remove french wikipedia for overall model
+no_final_bound_french <- final_bound %>%
+  filter(language != "\\^fr_") %>% 
+  droplevels()
+
+model_1 <- lmer(av_lambda ~ taxonomic_class + (1|language), data = no_final_bound_french)
+model_1_null <- lmer(av_lambda ~ 1 + (1|language), data = no_final_bound_french)
 AIC(model_1, model_1_null)
 
 summary(model_1)
@@ -212,20 +272,20 @@ iterate_covar_sai <- function(i, model, prediction_data){
   return(y)
 }
 
-prediction_data <- final_bound %>%
+no_french_prediction_data <- no_final_bound_french %>%
   dplyr::select(taxonomic_class, av_lambda, language) %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_1, prediction_data = prediction_data)
+no_french_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_1, prediction_data = no_french_prediction_data)
 
 # extract the median, upper interval, and lower interval for samples
-preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
+no_french_preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
                              Upper = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
                              Lower = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
 
 # plot the sampled effects from covariance matrix
-taxa_plot <- cbind(prediction_data, preds.emp.summ) %>%
+taxa_plot <- cbind(no_french_prediction_data, preds.emp.summ) %>%
   dplyr::select(-av_lambda) %>%
   mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                                   labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
@@ -235,26 +295,23 @@ taxa_plot <- cbind(prediction_data, preds.emp.summ) %>%
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper), width = 0.1) +
   geom_point(aes(x = taxonomic_class, y = Median)) + 
-  scale_y_continuous("Monthly rate of change", breaks = c(-0.0015, -0.001, -0.0005, 0, 0.0005, 0.001), labels = c("-0.0015", "-0.001", "-0.0005", "0", "0.0005", "0.001")) +
+  scale_y_continuous("Monthly rate of change", breaks = c(0, 0.0005, 0.001, 0.0015, 0.002), labels = c("0", "0.0005", "0.001", "0.0015", "0.002")) +
   theme_bw() +
   theme(panel.grid = element_blank(), 
         axis.title.x = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("class-rate-of-change_language-random-effect_10000_95.png", scale = 0.8, dpi = 400)
+ggsave("class-rate-of-change_language-random-effect_10000_95_no_french_2.png", scale = 0.8, dpi = 400)
 
-## approach for just english language to check models - gives mostly same output as before
-english_prediction <- final_bound #%>%
-  #filter(language == "\\^en_")
+## approach for just taxa to check approach of language
+model_2 <- lm(av_lambda ~ taxonomic_class, data = final_bound)
 
-model_2 <- lm(av_lambda ~ taxonomic_class, data = english_prediction)
+predicted_values <- predict(model_2, final_bound, se.fit = TRUE)
 
-predicted_values <- predict(model_2, english_prediction, se.fit = TRUE)
+final_bound$predicted_values <- predicted_values$fit
+final_bound$predicted_values_se <- predicted_values$se.fit
 
-english_prediction$predicted_values <- predicted_values$fit
-english_prediction$predicted_values_se <- predicted_values$se.fit
-
-fin_frame_6 <- english_prediction %>%
+fin_frame_6 <- final_bound %>%
   dplyr::select(taxonomic_class, predicted_values, predicted_values_se) %>%
   unique()
 
@@ -308,7 +365,7 @@ fin_frame_6 %>%
         axis.ticks.x = element_blank())
 
 # save the plot for interaction of language and class
-ggsave("taxa_language_rate-of-change_2.png", scale = 1.1, dpi = 350)
+ggsave("taxa_language_rate-of-change_3.png", scale = 1.1, dpi = 350)
 
 ## model with species (q_wikidata) as a random effect, and then sample from covariance matrix
 model_4 <- lmer(av_lambda ~ taxonomic_class * language + (1|q_wikidata), data = final_bound)
