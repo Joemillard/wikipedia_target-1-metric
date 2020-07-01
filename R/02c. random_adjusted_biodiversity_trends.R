@@ -46,7 +46,7 @@ rbindlist(random_trend) %>%
   theme_bw()
 
 # string for pollinating classes, plus random
-classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random_data")
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
@@ -183,9 +183,9 @@ run_each_group <- function(lambda_files, random_trend){
 # run the boostrapping of trends for each lambda, and adjust for the random of that language
 lpi_trends_adjusted <- list()
 bound_trends <- list()
-for(i in 1:length(smoothed_adjusted_lamda)){
-  for(j in 1:length(smoothed_adjusted_lamda[[i]])){
-    lpi_trends_adjusted[[j]] <- run_each_group(smoothed_adjusted_lamda[[i]][[j]], random_trend[[j]]) %>%
+for(i in 1:length(all_lambdas)){
+  for(j in 1:length(all_lambdas[[i]])){
+    lpi_trends_adjusted[[j]] <- run_each_group(all_lambdas[[i]][[j]], random_trend[[j]]) %>%
       mutate(language = random_trend[[j]]$language)
     
   }
@@ -201,7 +201,7 @@ fin_bound_trends <- rbindlist(bound_trends)
 # plot all the class level trends
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
-  mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random"),
+  mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random_data"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles", "Random"))) %>%
   mutate(language = factor(language, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
                            labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
@@ -215,9 +215,10 @@ fin_bound_trends %>%
   ylab("SAI") +
   xlab(NULL) +
   theme_bw() +
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("random_adjusted_class_SAI_free_1000_95_no-random-species_smoothed.png", scale = 1.3, dpi = 350)
+ggsave("random_adjusted_class_SAI_free_1000_95_no-random-species_non-smoothed.png", scale = 1.5, dpi = 350)
 
 # convert series back to lambda, and then take sets varying the start date up by one
 # figure for overall changes of different groupings
