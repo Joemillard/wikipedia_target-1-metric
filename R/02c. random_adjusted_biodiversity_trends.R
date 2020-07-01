@@ -104,6 +104,8 @@ smooth_series <- function(X){
   # create index
   index <- cumprod(10^c(0, X))
 
+  #print(index)
+  
   x_range <- 1:length(index)
   y.loess <- loess(index~x_range, span = 0.39)
   data_fin <- predict(y.loess, data.frame(x_range))
@@ -119,18 +121,32 @@ create_lambda <- function(X){
 # convert back to index, run the smooth for random adjusted lambda, and then convert back the lamda
 smooth_all_groups <- function(data_file){
   
+
+  smoothed_indices <- list()
+  
   # smooth the series for each row (species)
-  smoothed_indices <- apply(X = data_file[nrow(data_file),5:ncol(data_file)], 1, FUN = smooth_series)
+  for(i in 1:nrow(data_file)){
+    #print(as.numeric(as.vector(data_file[i, 5:ncol(data_file)])))
+    smoothed_indices[[i]] <- smooth_series(X = as.numeric(as.vector(data_file[i, 5:ncol(data_file)])))
+    smoothed_indices[[i]] <- create_lambda(smoothed_indices[[i]])
+  }
 
-  # convert the smoothed series back into lambda, and then transpose back to years as columns
-  smoothed_lambda <- apply(smoothed_indices, 2, FUN = create_lambda) %>%
-    t()
+  #browser()
+  
+  smoothed_lambda <- as.data.frame(do.call(rbind, smoothed_indices))
+  
+  print(smoothed_lambda)
 
+  #print(head(smoothed_lambda))
+  
   # add back in the original column names
   colnames(smoothed_lambda) <- colnames(data_file)[4:ncol(data_file)]
   
+  #print(smoothed_lambda)
+  
   # bind the adjusted smoothed lambda back onto the first four columns
   smoothed_lambda <- cbind(data_file[,1:3], smoothed_lambda)
+  #print(smoothed_lambda)
   
   return(smoothed_lambda)
 
@@ -202,7 +218,7 @@ fin_bound_trends %>%
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_colour_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
-  facet_grid(~taxa, scales = "free_y") +
+  facet_grid(language~taxa, scales = "free_y") +
   ylab("SAI") +
   xlab(NULL) +
   theme_bw() +
