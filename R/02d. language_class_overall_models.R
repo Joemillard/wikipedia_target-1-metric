@@ -442,3 +442,18 @@ rates_iucn_titles <- inner_join(rates_of_change, iucn_titles, by = c("q_wikidata
 
 # join the iucn data and rates of change onto the pollinator data, with full join to keep those that aren't pollinators
 joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("genus_name" = "genus", "family_name" = "Family"))
+
+# add column for whether that species is a pollinator, on basis of NAs in confidence column
+joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
+joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
+
+### models predicting rate of change against pollinating/non-pollinating
+poll_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators)
+summary(poll_model_1)
+
+# remove French wikipedia and rerun
+french_rates_poll <- joined_pollinators %>%
+  filter(site != "frwiki")
+
+poll_model_1_no_french <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = french_rates_poll)
+summary(poll_model_1_no_french)
