@@ -230,7 +230,7 @@ all_class <- rbindlist(language_frame) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   ggplot() +
-  geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 3.5) +
+  #geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 3.5) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
