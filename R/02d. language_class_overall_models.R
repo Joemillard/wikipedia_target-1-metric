@@ -410,17 +410,35 @@ taxa_plot <- cbind(prediction_data_inter_random, inter_random_preds.emp.summ) %>
 # save the plot for interaction of language and class
 ggsave("taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale = 1.1, dpi = 350)
 
-## retrieve whether the species is utilised through IUCN data
-rredlist::rl_threats(name = "Panthera leo", key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d")
+## models for rate of change predicted as function of pollinator and traded
+# set up string of required wiki projects
+wiki_projects <- c("eswiki", "frwiki", "dewiki", "jawiki", "itwiki", "arwiki", "ruwiki", "ptwiki", "zhwiki", "enwiki")
 
-rredlist::rl_threats(name = "Loxodonta africana", key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d")
+# read in smoothed rates of change - final_bound from above
+rates_of_change <- readRDS("data/class_wiki_indices/submission_2/mean_lambda_q_wikidata.rds")
 
+# assign new column to rate of change for wikipedia site
+for(i in 1:length(wiki_projects)){
+  rates_of_change$site[rates_of_change$language == languages[i]] <- wiki_projects[i]
+}
 
-rredlist::rl_narrative(name = "Panthera leo", key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d")
+# read in pollinator data
+pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE) %>%
+  mutate(Family = tolower(Family)) %>%
+  select(genus, Family, confidence, fact_conf, comb_conf) %>%
+  unique()
 
-rredlist::rl_threats(id = 103636217, key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d" )
+# read in the original onezoom data with q_wikidata and select for just species, genus, family, site, and q_wikidata
+# then subset for those of 10 languages, and for which we have q_wikidata
+iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv") %>%
+  select(genus_name, scientific_name, family_name, site, q_wikidata) %>%
+  filter(site %in% wiki_projects) %>%
+  filter(q_wikidata %in% rates_of_change$q_wikidata)
 
-rredlist::rl_search(id = 41681, key = "b9982f9d361dab635bdde922a08242bb84a5df79127d5288baca14bfeb6c7d8d")
+# match the iucn_title data with the rates of change and language
+rates_iucn_titles <- inner_join(rates_of_change, iucn_titles, by = c("q_wikidata", "site")) %>%
+  mutate(family_name = tolower(family_name)) %>%
+  select(-scientific_name)
 
-# iucn id is in the url
-read_html("https://www.iucnredlist.org/species/103636217/103636261")
+# join the iucn data and rates of change onto the pollinator data, with full join to keep those that aren't pollinators
+joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("genus_name" = "genus", "family_name" = "Family"))
