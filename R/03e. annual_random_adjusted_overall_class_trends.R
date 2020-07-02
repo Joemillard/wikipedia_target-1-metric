@@ -245,7 +245,7 @@ rbindlist(all_frames) %>%
   mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   ggplot() +
-  geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 2.5) +
+  #geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 2.5) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
@@ -256,4 +256,4 @@ rbindlist(all_frames) %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("monthly-average_random_adjusted_all-class_start-point_no-random-species.png", scale = 1.1, dpi = 350)
+ggsave("monthly-average_random_adjusted_all-class_no-random-species.png", scale = 1.1, dpi = 350)
