@@ -15,6 +15,7 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/avera
 
 # read in the rds for total monthly views to retrieve the lambda ids
 average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views[[2]] <- NULL
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
@@ -35,11 +36,12 @@ for(i in 1:length(average_monthly_views)){
 }
 
 # read in the string of languages and taxa - original order sorted alphabetically for files read in
-languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+languages <- c("\\^es_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
 random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend[[2]] <- NULL
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -56,7 +58,7 @@ for(i in 1:length(random_trend)){
   random_trend[[i]]$language <- languages[i]
 }
 
-# bind together and plot the random trends
+# bind together and plot the random trends - note this plot includes the french wikipedia
 random_trend_figure <- rbindlist(random_trend) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
@@ -144,15 +146,70 @@ for(k in 1:2){
     }
   }
   
+  #### additional smoothing of the random adjusted indices
+  
+  # smooth the adjusted random lambda for each species
+  # iterate through all the articles of that class/language
+  smooth_series <- function(X){
+    
+    # create index
+    index <- cumprod(10^c(0, X))
+    
+    # smooth the index
+    x_range <- 1:length(index)
+    y.loess <- loess(index~x_range, span = 0.30)
+    data_fin <- predict(y.loess, data.frame(x_range))
+    return(data_fin)
+  }
+  
+  # convert the index back to lambda
+  create_lambda <- function(X){
+    lambda <- c(1, diff(log10(X)))
+    return(lambda)
+  }
+  
+  # convert back to index, run the smooth for random adjusted lambda, and then convert back the lamda
+  smooth_all_groups <- function(data_file){
+    
+    # set up an empty list for smoothed values
+    smoothed_indices <- list()
+    
+    # smooth the series for each row (species)
+    for(i in 1:nrow(data_file)){
+      smoothed_indices[[i]] <- smooth_series(X = as.numeric(as.vector(data_file[i, 5:ncol(data_file)])))
+      smoothed_indices[[i]] <- create_lambda(smoothed_indices[[i]])
+    }
+    
+    smoothed_lambda <- as.data.frame(do.call(rbind, smoothed_indices))
+    
+    # add back in the original column names
+    colnames(smoothed_lambda) <- colnames(data_file)[4:ncol(data_file)]
+    
+    # bind the adjusted smoothed lambda back onto the first four columns
+    smoothed_lambda <- cbind(data_file[,1:3], smoothed_lambda)
+    
+    return(smoothed_lambda)
+    
+  }
+  
+  # run the smoothing of lamdas over each class/language combination
+  smoothed_adjusted_lamda <- list()
+  for(i in 1:length(all_lambdas)){
+    smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
+    print(i)
+  }
+  
+  ###
+  
   # merge each lambda file with the speciesSSet ID from view data
   merge_lambda <- list()
   merge_fin_lambda <- list()
-  for(i in 1:length(language_views)){
-    for(j in 1:length(language_views[[i]])){
-      merge_lambda[[j]] <- inner_join(all_lambdas[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
+  for(i in 1:length(smoothed_adjusted_lamda)){
+    for(j in 1:length(smoothed_adjusted_lamda[[i]])){
+      merge_lambda[[j]] <- inner_join(smoothed_adjusted_lamda[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
         mutate(taxa = classes[i]) %>%
         mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
-      print(nrow(language_views[[i]][[j]]) - nrow(merge_lambda[[j]])) # take initial frame from the merged one to check they're the same no. of rows
+      print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]])) # take initial frame from the merged one to check they're the same no. of rows
     }
     merge_fin_lambda[[i]] <- merge_lambda
   }
@@ -244,4 +301,4 @@ bound_trends_list %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-daily_random_adjusted_all-class_SAI_1000_95_no_random.png", scale = 1.1, dpi = 350)
+ggsave("average-daily_random_adjusted_all-class_SAI_1000_95_no_random_smoothed_no-french.png", scale = 1.1, dpi = 350)
