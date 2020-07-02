@@ -463,15 +463,15 @@ traded_pollinating$traded[is.na(traded_pollinating$Class)] <- "N"
 traded_pollinating$traded[traded_pollinating$taxonomic_class == "actinopterygii"] <- NA
 traded_pollinating$traded[traded_pollinating$taxonomic_class == "insecta"] <- NA
 
+# remove unwanted columns from data of rates of change
+traded_pollinating <- traded_pollinating %>%
+  select(av_lambda, q_wikidata, site, scientific_name, taxonomic_class, family_name, pollinating, traded, Trade_type, Source)
+
+saveRDS(traded_pollinating, "mean_lambda_traded-pollinating.rds")
+
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
 poll_traded_model_1 <- lmer(av_lambda ~ pollinating * traded + (1|language), data = traded_pollinating)
 summary(poll_traded_model_1)
 
-# remove French wikipedia, fish, and insects, and rerun
-french_rates_poll <- traded_pollinating %>%
-  filter(!taxonomic_class %in% c("actinopterygii", "insecta")) %>%
-  filter(site != "frwiki")
 
-poll_model_1_no_french <- lmer(av_lambda ~  traded * taxonomic_class + (1|language), data = french_rates_poll)
-summary(poll_model_1_no_french)
 
