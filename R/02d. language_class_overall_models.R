@@ -428,6 +428,12 @@ pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFact
   select(genus, Family, confidence, fact_conf, comb_conf) %>%
   unique()
 
+# read in traded vertebrate species, remove first three empty rows, and then add the fourth row as column names
+traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
+traded_species <- traded_species[4:nrow(traded_species),]
+colnames(traded_species) <- traded_species[1,]
+traded_species <- traded_species[2:nrow(traded_species),]
+
 # read in the original onezoom data with q_wikidata and select for just species, genus, family, site, and q_wikidata
 # then subset for those of 10 languages, and for which we have q_wikidata
 iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv") %>%
@@ -437,8 +443,7 @@ iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.cs
 
 # match the iucn_title data with the rates of change and language
 rates_iucn_titles <- inner_join(rates_of_change, iucn_titles, by = c("q_wikidata", "site")) %>%
-  mutate(family_name = tolower(family_name)) %>%
-  select(-scientific_name)
+  mutate(family_name = tolower(family_name))
 
 # join the iucn data and rates of change onto the pollinator data, with full join to keep those that aren't pollinators
 joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("genus_name" = "genus", "family_name" = "Family"))
@@ -447,13 +452,26 @@ joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("genus_name"
 joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
-### models predicting rate of change against pollinating/non-pollinating
-poll_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators)
-summary(poll_model_1)
+# merge the traded species with the pollinator and average lambda data
+traded_pollinating <- left_join(joined_pollinators, traded_species, by = c("scientific_name" = "Species"))
 
-# remove French wikipedia and rerun
-french_rates_poll <- joined_pollinators %>%
+# add column for whether the species is traded, on basis of NAs in traded Class column
+traded_pollinating$traded[!is.na(traded_pollinating$Class)] <- "Y"
+traded_pollinating$traded[is.na(traded_pollinating$Class)] <- "N"
+
+# change rows for fish and insects for trade to NA
+traded_pollinating$traded[traded_pollinating$taxonomic_class == "actinopterygii"] <- NA
+traded_pollinating$traded[traded_pollinating$taxonomic_class == "insecta"] <- NA
+
+### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
+poll_traded_model_1 <- lmer(av_lambda ~ pollinating * traded + (1|language), data = traded_pollinating)
+summary(poll_traded_model_1)
+
+# remove French wikipedia, fish, and insects, and rerun
+french_rates_poll <- traded_pollinating %>%
+  filter(!taxonomic_class %in% c("actinopterygii", "insecta")) %>%
   filter(site != "frwiki")
 
-poll_model_1_no_french <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = french_rates_poll)
+poll_model_1_no_french <- lmer(av_lambda ~  traded * taxonomic_class + (1|language), data = french_rates_poll)
 summary(poll_model_1_no_french)
+
