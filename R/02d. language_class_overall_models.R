@@ -247,6 +247,9 @@ final_bound <- rbindlist(final_bound) %>%
   mutate(language = factor(language)) %>%
   mutate(q_wikidata = factor(q_wikidata))
 
+# read in smoothed rates of change - final_bound from above
+final_bound <- readRDS("data/class_wiki_indices/submission_2/mean_lambda_q_wikidata.rds")
+
 ## build model with language as random effect and sample from covariance matrix
 # remove french wikipedia for overall model
 no_final_bound_french <- final_bound %>%
@@ -277,7 +280,7 @@ no_french_prediction_data <- no_final_bound_french %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-no_french_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, model_1, prediction_data = no_french_prediction_data)
+no_french_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, model_1, prediction_data = no_french_prediction_data)
 
 # extract the median, upper interval, and lower interval for samples
 no_french_preds.emp.summ <- data.frame(Median = apply(X = no_french_preds.emp, MARGIN = 1, FUN = median),
@@ -327,7 +330,15 @@ fin_frame_6 %>%
 
 ## approach using language and class as fixed effects
 model_3 <- lm(av_lambda ~ taxonomic_class * language, data = final_bound)
+model_3_taxa <- lm(av_lambda ~ taxonomic_class, data = final_bound)
+model_3_language<- lm(av_lambda ~ language, data = final_bound)
+model_int <- lm(av_lambda ~ 1, data = final_bound)
+
+# check AIC values
+AIC(model_3, model_3_taxa, model_3_language, model_int)
+
 summary(model_3)
+anova(model_3)
 
 # set up prediction data
 predicted_values_interaction <- predict(model_3, final_bound, se.fit = TRUE)
@@ -367,6 +378,15 @@ fin_frame_6 %>%
 
 # save the plot for interaction of language and class
 ggsave("taxa_language_rate-of-change_3.png", scale = 1.1, dpi = 350)
+
+# checking model assumptions
+par(mfrow = c(2,2))
+plot(model_3)
+
+final_bound %>%
+  ggplot() +
+  geom_boxplot(aes(x = taxonomic_class, y = av_lambda)) +
+  facet_wrap(~language)
 
 ## model with species (q_wikidata) as a random effect, and then sample from covariance matrix
 model_4 <- lmer(av_lambda ~ taxonomic_class * language + (1|q_wikidata), data = final_bound)
@@ -424,36 +444,42 @@ for(i in 1:length(wiki_projects)){
 
 # read in pollinator data
 pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE) %>%
-  mutate(Family = tolower(Family)) %>%
-  select(genus, Family, confidence, fact_conf, comb_conf) %>%
+  select(genus, Class, confidence, fact_conf, comb_conf) %>%
+  mutate(Class = tolower(Class)) %>%
   unique()
 
 # read in traded vertebrate species, remove first three empty rows, and then add the fourth row as column names
 traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
+  
 traded_species <- traded_species[4:nrow(traded_species),]
 colnames(traded_species) <- traded_species[1,]
-traded_species <- traded_species[2:nrow(traded_species),]
+traded_species <- traded_species[2:nrow(traded_species),] %>%
+  mutate(Genus = stringr::word(Species, 1)) %>%
+  select(-Species, -Family, -Source, -Trade_type, -Order) %>%
+  unique()
 
 # read in the original onezoom data with q_wikidata and select for just species, genus, family, site, and q_wikidata
 # then subset for those of 10 languages, and for which we have q_wikidata
 iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv") %>%
-  select(genus_name, scientific_name, family_name, site, q_wikidata) %>%
+  select(name, site, q_wikidata, class_name) %>%
   filter(site %in% wiki_projects) %>%
-  filter(q_wikidata %in% rates_of_change$q_wikidata)
+  filter(q_wikidata %in% rates_of_change$q_wikidata) %>%
+  mutate(class_name = tolower(class_name)) %>%
+  mutate(name = stringr::word(name, 1)) %>%
+  unique()
 
 # match the iucn_title data with the rates of change and language
-rates_iucn_titles <- inner_join(rates_of_change, iucn_titles, by = c("q_wikidata", "site")) %>%
-  mutate(family_name = tolower(family_name))
+rates_iucn_titles <- left_join(rates_of_change, iucn_titles, by = c("q_wikidata", "site", "taxonomic_class" = "class_name"))
 
 # join the iucn data and rates of change onto the pollinator data, with full join to keep those that aren't pollinators
-joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("genus_name" = "genus", "family_name" = "Family"))
+joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("name" = "genus", "taxonomic_class" = "Class"))
 
 # add column for whether that species is a pollinator, on basis of NAs in confidence column
 joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
 # merge the traded species with the pollinator and average lambda data
-traded_pollinating <- left_join(joined_pollinators, traded_species, by = c("scientific_name" = "Species"))
+traded_pollinating <- left_join(joined_pollinators, traded_species, by = c("name" = "Genus"))
 
 # add column for whether the species is traded, on basis of NAs in traded Class column
 traded_pollinating$traded[!is.na(traded_pollinating$Class)] <- "Y"
@@ -465,12 +491,14 @@ traded_pollinating$traded[traded_pollinating$taxonomic_class == "insecta"] <- NA
 
 # remove unwanted columns from data of rates of change
 traded_pollinating <- traded_pollinating %>%
-  select(av_lambda, q_wikidata, site, scientific_name, taxonomic_class, family_name, pollinating, traded, Trade_type, Source)
+  select(av_lambda, language, q_wikidata, site, name, taxonomic_class, pollinating, traded)
 
-saveRDS(traded_pollinating, "mean_lambda_traded-pollinating.rds")
+
+
+#saveRDS(traded_pollinating, "mean_lambda_traded-pollinating.rds")
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
-poll_traded_model_1 <- lmer(av_lambda ~ pollinating * traded + (1|language), data = traded_pollinating)
+poll_traded_model_1 <- lmer(av_lambda ~ traded * pollinating + (1|language), data = traded_pollinating)
 summary(poll_traded_model_1)
 
 
