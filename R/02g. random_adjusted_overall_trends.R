@@ -13,59 +13,6 @@ source("R/00. functions.R")
 # read in the random rds file
 directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
-# read in the rds for total monthly views to retrieve the lambda ids
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
-average_monthly_views[[2]] <- NULL
-
-## format for the lpi function
-# rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
-iucn_views_poll <- list()
-for(i in 1:length(average_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
-  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
-  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
-    data_fin <- x %>%
-      select(article, q_wikidata, dec_date, av_views) %>%
-      mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
-      filter(complete.cases(.)) %>%
-      select(q_wikidata, SpeciesSSet, article) %>%
-      unique() %>%
-      mutate(SpeciesSSet = as.character(SpeciesSSet))
-    return(data_fin)
-  })
-}
-
-# read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
-languages <- c("\\^es_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
-classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
-
-# read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
-random_trend[[2]] <- NULL
-
-# adjust each of the lambda values for random
-# adjust the year column
-for(i in 1:length(random_trend)){
-  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
-  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
-  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
-  
-  # calculate lambda for random
-  random_trend[[i]] <- random_trend[[i]] %>%
-    filter(date %in% c(1977:2033))
-  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
-  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
-  random_trend[[i]]$language <- languages[i]
-}
-
-# bind together and plot the random trends
-rbindlist(random_trend) %>%
-  ggplot() +
-  geom_line(aes(x = Year, y = LPI_final, group = language)) +
-  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
-  facet_wrap(~language) +
-  theme_bw()
-
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
 view_directories <- function(classes, directory){
@@ -93,31 +40,6 @@ view_directories <- function(classes, directory){
   # return list of full file paths for each language
   return(user_files_dir)
 }
-
-# run the function with 10 languages, specifying the directory
-user_files <- view_directories(classes,
-                               directory)
-
-# read in all the files in groups for each language
-language_views <- list()
-system.time(for(i in 1:length(user_files)){
-  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
-})
-
-# adjust the lambdas for each species for each language with random, and conert speciesset to character for merging
-adj_lambdas <- list()
-all_lambdas <- list()
-data_file <- list()
-for(i in 1:length(language_views)){
-  for(j in 1:length(random_trend)){
-    data_file <- language_views[[i]][[j]] %>%
-      mutate(SpeciesSSet = as.character(SpeciesSSet))
-    adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend[[j]]$lamda, FUN = "-"))
-  }
-  all_lambdas[[i]] <- adj_lambdas
-}
-
-#### additional smoothing of the random adjusted indices
 
 # smooth the adjusted random lambda for each species
 # iterate through all the articles of that class/language
@@ -163,28 +85,6 @@ smooth_all_groups <- function(data_file){
   
 }
 
-# run the smoothing of lamdas over each class/language combination
-smoothed_adjusted_lamda <- list()
-for(i in 1:length(all_lambdas)){
-  smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
-  print(i)
-}
-
-###
-
-# merge each lambda file with the speciesSSet ID from view data
-merge_lambda <- list()
-merge_fin_lambda <- list()
-for(i in 1:length(smoothed_adjusted_lamda)){
-  for(j in 1:length(smoothed_adjusted_lamda[[i]])){
-    merge_lambda[[j]] <- inner_join(smoothed_adjusted_lamda[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
-      mutate(taxa = classes[i]) %>%
-      mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
-    print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
-  }
-  merge_fin_lambda[[i]] <- merge_lambda
-}
-
 # function for binding all the lambdas together and calculate average for each q_wikidata
 wiki_average <- function(data_file){
   data_fin <- data_file %>%
@@ -195,19 +95,6 @@ wiki_average <- function(data_file){
     ungroup()
   return(data_fin)
 }
-
-# rbindlist all lambda together and calculate averge for each species across languages
-merge_species <- list()
-for(i in 1:length(merge_fin_lambda)){
-  merge_species[[i]] <- rbindlist(merge_fin_lambda[[i]])
-}
-
-# merge all the lambda files, and calc average across each q_wikidata
-merge_species <- rbindlist(merge_species) %>% 
-  wiki_average()
-
-# reshape lambda files back into year rows, and then split into separate taxonomic classes
-all_lambdas <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
 
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
@@ -236,6 +123,240 @@ run_each_group <- function(lambda_files, random_trend){
   boot_res$LPI_lwr <- apply(dbi.boot$t, 2, quantile, probs = c(0.025), na.rm = TRUE)
   return(boot_res)
 }
+
+languages_orig <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
+lpi_trends_adjusted <- list()
+
+for(l in 1:length(languages_orig)){
+  
+  # read in the rds for total monthly views to retrieve the lambda ids
+  average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+  average_monthly_views[[l]] <- NULL # remove ones wikipedia in stepwise manner
+
+  ## format for the lpi function
+  # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
+  iucn_views_poll <- list()
+  for(i in 1:length(average_monthly_views)){
+    iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
+    iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
+    iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
+      data_fin <- x %>%
+        select(article, q_wikidata, dec_date, av_views) %>%
+        mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
+        filter(complete.cases(.)) %>%
+        select(q_wikidata, SpeciesSSet, article) %>%
+        unique() %>%
+        mutate(SpeciesSSet = as.character(SpeciesSSet))
+      return(data_fin)
+    })
+  }
+
+  # read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
+  languages <- languages_orig[-l]
+
+  # read in the lambda files 
+  random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+  random_trend[[l]] <- NULL
+
+  # adjust each of the lambda values for random
+  # adjust the year column
+  for(i in 1:length(random_trend)){
+    random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
+    random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
+    random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
+  
+  # calculate lambda for random
+  random_trend[[i]] <- random_trend[[i]] %>%
+    filter(date %in% c(1977:2033))
+  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
+  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
+  random_trend[[i]]$language <- languages[i]
+  }
+
+  # bind together and plot the random trends
+  rbindlist(random_trend) %>%
+    ggplot() +
+    geom_line(aes(x = Year, y = LPI_final, group = language)) +
+    geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+    facet_wrap(~language) +
+    theme_bw()
+
+  # run the function with 10 languages, specifying the directory
+  user_files <- view_directories(classes,
+                               directory)
+
+  # read in all the files in groups for each language
+  language_views <- list()
+  system.time(for(i in 1:length(user_files)){
+    language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
+  })
+
+  # adjust the lambdas for each species for each language with random, and conert speciesset to character for merging
+  adj_lambdas <- list()
+  all_lambdas <- list()
+  data_file <- list()
+  for(i in 1:length(language_views)){
+    for(j in 1:length(random_trend)){
+      data_file <- language_views[[i]][[j]] %>%
+        mutate(SpeciesSSet = as.character(SpeciesSSet))
+      adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend[[j]]$lamda, FUN = "-"))
+    }
+    all_lambdas[[i]] <- adj_lambdas
+  }
+
+  #### additional smoothing of the random adjusted indices
+  # run the smoothing of lamdas over each class/language combination
+  smoothed_adjusted_lamda <- list()
+  for(i in 1:length(all_lambdas)){
+    smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
+    print(i)
+  }
+  ####
+
+  # merge each lambda file with the speciesSSet ID from view data
+  merge_lambda <- list()
+  merge_fin_lambda <- list()
+  for(i in 1:length(smoothed_adjusted_lamda)){
+    for(j in 1:length(smoothed_adjusted_lamda[[i]])){
+      merge_lambda[[j]] <- inner_join(smoothed_adjusted_lamda[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
+        mutate(taxa = classes[i]) %>%
+        mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+      print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
+    }
+    merge_fin_lambda[[i]] <- merge_lambda
+  }
+
+  # rbindlist all lambda together and calculate averge for each species across languages
+  merge_species <- list()
+  for(i in 1:length(merge_fin_lambda)){
+    merge_species[[i]] <- rbindlist(merge_fin_lambda[[i]])
+  }
+
+  # merge all the lambda files, and calc average across each q_wikidata
+  merge_species <- rbindlist(merge_species) %>% 
+    wiki_average()
+
+  # reshape lambda files back into year rows, and then split into separate taxonomic classes
+  all_lambdas <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
+
+  # run the boostrapping of trends for all lambda, and adjust for the random of that language
+  lpi_trends_adjusted[[l]] <- run_each_group(all_lambdas, random_trend = random_trend[[1]])
+}
+
+# add the language jack-knifed for each grouping
+bound_trends <- list()
+for(i in 1:length(lpi_trends_adjusted)){
+  bound_trends[[i]] <- lpi_trends_adjusted[[i]] %>%
+    mutate(language_jack = languages_orig[i])
+}
+
+# collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
+all_class <- rbindlist(bound_trends) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(language_jack = factor(language_jack, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
+                                labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
+  ggplot() +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language_jack), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI, colour = language_jack)) +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+  scale_fill_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
+  scale_colour_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
+  ylab("SAI") +
+  xlab(NULL) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+## after jack-knifing, remove the language/languages that have a big influence on the overall index
+
+# read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
+languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
+
+# read in the lambda files 
+random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+#random_trend[[2]] <- NULL
+
+# adjust each of the lambda values for random
+# adjust the year column
+for(i in 1:length(random_trend)){
+  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
+  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
+  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
+  
+  # calculate lambda for random
+  random_trend[[i]] <- random_trend[[i]] %>%
+    filter(date %in% c(1977:2033))
+  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
+  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
+  random_trend[[i]]$language <- languages[i]
+}
+
+# bind together and plot the random trends
+rbindlist(random_trend) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI_final, group = language)) +
+  geom_ribbon(aes(x = Year, ymin = CI_low, ymax = CI_high, group = language), alpha = 0.3) +
+  facet_wrap(~language) +
+  theme_bw()
+
+# run the function with 10 languages, specifying the directory
+user_files <- view_directories(classes,
+                               directory)
+
+# read in all the files in groups for each language
+language_views <- list()
+system.time(for(i in 1:length(user_files)){
+  language_views[[i]] <- lapply(user_files[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
+})
+
+# adjust the lambdas for each species for each language with random, and conert speciesset to character for merging
+adj_lambdas <- list()
+all_lambdas <- list()
+data_file <- list()
+for(i in 1:length(language_views)){
+  for(j in 1:length(random_trend)){
+    data_file <- language_views[[i]][[j]] %>%
+      mutate(SpeciesSSet = as.character(SpeciesSSet))
+    adj_lambdas[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend[[j]]$lamda, FUN = "-"))
+  }
+  all_lambdas[[i]] <- adj_lambdas
+}
+
+#### additional smoothing of the random adjusted indices
+# run the smoothing of lamdas over each class/language combination
+smoothed_adjusted_lamda <- list()
+for(i in 1:length(all_lambdas)){
+  smoothed_adjusted_lamda[[i]] <- lapply(all_lambdas[[i]], smooth_all_groups)
+  print(i)
+}
+####
+
+# merge each lambda file with the speciesSSet ID from view data
+merge_lambda <- list()
+merge_fin_lambda <- list()
+for(i in 1:length(smoothed_adjusted_lamda)){
+  for(j in 1:length(smoothed_adjusted_lamda[[i]])){
+    merge_lambda[[j]] <- inner_join(smoothed_adjusted_lamda[[i]][[j]], iucn_views_poll[[j]][[i]], by = "SpeciesSSet") %>%
+      mutate(taxa = classes[i]) %>%
+      mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+    print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
+  }
+  merge_fin_lambda[[i]] <- merge_lambda
+}
+
+# rbindlist all lambda together and calculate averge for each species across languages
+merge_species <- list()
+for(i in 1:length(merge_fin_lambda)){
+  merge_species[[i]] <- rbindlist(merge_fin_lambda[[i]])
+}
+
+# merge all the lambda files, and calc average across each q_wikidata
+merge_species <- rbindlist(merge_species) %>% 
+  wiki_average()
+
+# reshape lambda files back into year rows, and then split into separate taxonomic classes
+all_lambdas <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
 
 # run the boostrapping of trends for all lambda, and adjust for the random of that language
 lpi_trends_adjusted <- run_each_group(all_lambdas, random_trend = random_trend[[1]])
@@ -267,7 +388,6 @@ all_class <- rbindlist(language_frame) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   ggplot() +
-  #geom_point(aes(x = Year, y = LPI, colour = factor_rate), size = 2) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
