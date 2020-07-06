@@ -5,6 +5,7 @@ library(ggplot2)
 library(boot)
 library(forcats)
 library(cowplot)
+library(patchwork)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -252,7 +253,7 @@ for(i in 1:length(lpi_trends_adjusted)){
 }
 
 # collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
-all_class <- rbindlist(bound_trends) %>%
+jack_knifed_class <- rbindlist(bound_trends) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(language_jack = factor(language_jack, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
                                 labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
@@ -262,7 +263,8 @@ all_class <- rbindlist(bound_trends) %>%
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   scale_fill_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_colour_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
-  ylab("SAI") +
+  scale_y_continuous(breaks = c(1.05, 1, 0.95, 0.9, 0.85, 0.8), labels = c("1.05","1", "0.95", "0.9", "0.85", "0.8")) +
+  ylab("Overall Species Awareness Index (SAI)") +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank())
@@ -270,12 +272,32 @@ all_class <- rbindlist(bound_trends) %>%
 ## after jack-knifing, remove the language/languages that have a big influence on the overall index
 
 # read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
-languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+languages <- c("\\^es_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
+
+# read in daily average to retrieve q_wikidata id
+average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views[[2]] <- NULL # remove french wikipedia as overly influences index
+
+iucn_views_poll <- list()
+for(i in 1:length(average_monthly_views)){
+  iucn_views_poll[[i]] <- lapply(average_monthly_views[[i]], rescale_iucn)
+  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
+  iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], function(x){
+    data_fin <- x %>%
+      select(article, q_wikidata, dec_date, av_views) %>%
+      mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
+      filter(complete.cases(.)) %>%
+      select(q_wikidata, SpeciesSSet, article) %>%
+      unique() %>%
+      mutate(SpeciesSSet = as.character(SpeciesSSet))
+    return(data_fin)
+  })
+}
 
 # read in the lambda files 
 random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
-#random_trend[[2]] <- NULL
+random_trend[[2]] <- NULL
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -302,7 +324,8 @@ rbindlist(random_trend) %>%
 
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes,
-                               directory)
+                               directory, 
+                               languages)
 
 # read in all the files in groups for each language
 language_views <- list()
@@ -375,7 +398,7 @@ for(i in 1:56){
 }
   
 # collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
-all_class <- rbindlist(language_frame) %>%
+all_class_no_french <- rbindlist(language_frame) %>%
   select(series_start, average_lambda, factor_rate) %>%
   unique() %>% 
   bind_rows(data.frame("average_lambda" = NA,
@@ -388,13 +411,17 @@ all_class <- rbindlist(language_frame) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
-  geom_line(aes(x = Year, y = LPI)) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3, fill = "#4DAF4A") +
+  geom_line(aes(x = Year, y = LPI), colour = "#4DAF4A") +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_colour_manual("Benchmark month", na.translate = F, values = c("#009E73", "#D55E00")) +
-  ylab("SAI") +
+  ylab("") +
+  scale_y_continuous(breaks = c(1.05, 1, 0.95), labels = c("1.05","1", "0.95")) +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species_smoothed_no-french.png", scale = 0.9, dpi = 350)
+# combine the jack-knifed and overall figure
+jack_knifed_class + all_class_no_french + plot_layout(ncol = 1)
+
+
+ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species_smoothed_no-french_jack.png", scale = 1, dpi = 350)
