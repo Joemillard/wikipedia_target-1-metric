@@ -527,11 +527,27 @@ joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
 # remove the extra pollination columns
 joined_pollinators <- joined_pollinators %>%
-  select(-confidence, -fact_conf, -comb_conf, -class_name, -ns)
+  select(-confidence, -fact_conf, -comb_conf, -class_name, -ns) %>%
+  #filter(site != "frwiki") %>%
+  filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
-poll_traded_model_1 <- lmer(av_lambda ~ taxonomic_class * used + (1|language), data = joined_pollinators)
+poll_traded_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators)
 summary(poll_traded_model_1)
 
+prediction_data_inter_random <- joined_pollinators %>%
+  dplyr::select(taxonomic_class, pollinating, av_lambda) %>%
+  mutate(av_lambda = 0) %>%
+  unique()
 
+used_random_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, poll_traded_model_1, prediction_data = prediction_data_inter_random)
 
+# extract the median, upper interval, and lower interval for samples
+used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.emp, MARGIN = 1, FUN = median),
+                                          Upper = apply(X = used_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                                          Lower = apply(X = used_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+
+taxa_plot <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
+  ggplot() +
+  geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = pollinating), position = position_dodge(width = 0.5), width = 0.2) +
+  geom_point(aes(x = taxonomic_class, y = Median, colour = pollinating), position = position_dodge(width = 0.5), size = 1.5)
