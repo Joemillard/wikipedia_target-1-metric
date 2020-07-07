@@ -446,59 +446,91 @@ for(i in 1:length(wiki_projects)){
 pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE) %>%
   select(genus, Class, confidence, fact_conf, comb_conf) %>%
   mutate(Class = tolower(Class)) %>%
+  filter(genus != "Tephrozosterops") %>%
   unique()
 
 # read in traded vertebrate species, remove first three empty rows, and then add the fourth row as column names
 traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
-  
-traded_species <- traded_species[4:nrow(traded_species),]
-colnames(traded_species) <- traded_species[1,]
-traded_species <- traded_species[2:nrow(traded_species),] %>%
-  mutate(Genus = stringr::word(Species, 1)) %>%
-  select(-Species, -Family, -Source, -Trade_type, -Order) %>%
-  unique()
 
-# read in the original onezoom data with q_wikidata and select for just species, genus, family, site, and q_wikidata
-# then subset for those of 10 languages, and for which we have q_wikidata
-iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv") %>%
-  select(name, site, q_wikidata, class_name) %>%
-  filter(site %in% wiki_projects) %>%
-  filter(q_wikidata %in% rates_of_change$q_wikidata) %>%
+# read in the iucn_titles to match genus name and class for the pollinators - filter out tephrozosterops, which has duplicated wiki id among languages and lower pollination confidence
+iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
+  select(genus_name, class_name, q_wikidata) %>%
+  unique() %>%
   mutate(class_name = tolower(class_name)) %>%
-  mutate(name = stringr::word(name, 1)) %>%
+  filter(class_name %in% c("aves", "reptilia", "insecta", "mammalia")) %>%
+  filter(genus_name != "Tephrozosterops")
+
+# read in the q_wikidata for traded species
+traded_species_en <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata.csv", stringsAsFactors = FALSE) %>%
+  select(-ï..)
+traded_species_rem <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata_fr_edit.csv", stringsAsFactors = FALSE) %>%
+  select(-manual_search, -X)
+
+#
+all_traded <- rbind(traded_species_en, traded_species_rem) %>%
+  filter(qwiki_id != "") %>% 
+  select(qwiki_id, ns) %>%
+  unique()
+  
+# read in the fish species
+fao_fishes <-  read.csv("data/class_wiki_indices/submission_2/ASFIS_sp/ASFIS_sp_2020.csv", stringsAsFactors = FALSE)
+
+# read in the fish species with q_wikidata
+fishes_en <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata.csv", stringsAsFactors = FALSE)
+fishes_zh <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_zh.csv", stringsAsFactors = FALSE)
+fishes_fr <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_fr.csv", stringsAsFactors = FALSE)
+fishes_de <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_de.csv", stringsAsFactors = FALSE)
+fishes_es <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_es.csv", stringsAsFactors = FALSE)
+fishes_ru <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ru.csv", stringsAsFactors = FALSE)
+fishes_pt <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_pt.csv", stringsAsFactors = FALSE)
+fishes_it <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_it.csv", stringsAsFactors = FALSE)
+fishes_ar <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ar.csv", stringsAsFactors = FALSE)
+fishes_ja <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ja.csv", stringsAsFactors = FALSE)
+
+# bind together all the fished data
+all_fishes <- rbind(fishes_en, fishes_zh, 
+                    fishes_fr, fishes_de, 
+                    fishes_es, fishes_ru, 
+                    fishes_pt, fishes_it, 
+                    fishes_ar, fishes_ja) %>%
+  filter(qwiki_id != "") %>%
+  select(qwiki_id, ns) %>%
   unique()
 
-# match the iucn_title data with the rates of change and language
-rates_iucn_titles <- left_join(rates_of_change, iucn_titles, by = c("q_wikidata", "site", "taxonomic_class" = "class_name"))
+# merge the traded and fish species onto the datasets by q_wikidata - for some reason fao data contains some non-fish species, so filtering out
+rates_fish <- left_join(rates_of_change, all_fishes, by = c("q_wikidata" = "qwiki_id")) %>%
+  rename(used = ns)
 
-# join the iucn data and rates of change onto the pollinator data, with full join to keep those that aren't pollinators
-joined_pollinators <- left_join(rates_iucn_titles, pollinat, by = c("name" = "genus", "taxonomic_class" = "Class"))
+# add new column for "used" for fish that are both fish and fished
+rates_fish$used <- ifelse(!is.na(rates_fish$used) & rates_fish$taxonomic_class == "actinopterygii", "Y", "N")
+
+# merge the rates_fish dataframe onto the traded animals
+traded_rates <- left_join(rates_fish, all_traded, by = c("q_wikidata" = "qwiki_id"))
+
+# amend column for "used" for species that are traded
+traded_rates$used[traded_rates$ns == 0] <- "Y"
+
+# set all the insects as NA because we don't know
+traded_rates$used[traded_rates$taxonomic_class == "insecta"] <- NA
+
+# bind the iucn_titles data onto the rates to retrieve the class and genus name
+traded_rates <- left_join(traded_rates, iucn_titles, by = "q_wikidata")
+
+# join rates of change data onto the pollinator data, with full join to keep those that aren't pollinators
+joined_pollinators <- left_join(traded_rates, pollinat, by = c("genus_name" = "genus", "taxonomic_class" = "Class")) %>%
+  select(-genus_name) %>%
+  unique()
 
 # add column for whether that species is a pollinator, on basis of NAs in confidence column
 joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
-# merge the traded species with the pollinator and average lambda data
-traded_pollinating <- left_join(joined_pollinators, traded_species, by = c("name" = "Genus"))
-
-# add column for whether the species is traded, on basis of NAs in traded Class column
-traded_pollinating$traded[!is.na(traded_pollinating$Class)] <- "Y"
-traded_pollinating$traded[is.na(traded_pollinating$Class)] <- "N"
-
-# change rows for fish and insects for trade to NA
-traded_pollinating$traded[traded_pollinating$taxonomic_class == "actinopterygii"] <- NA
-traded_pollinating$traded[traded_pollinating$taxonomic_class == "insecta"] <- NA
-
-# remove unwanted columns from data of rates of change
-traded_pollinating <- traded_pollinating %>%
-  select(av_lambda, language, q_wikidata, site, name, taxonomic_class, pollinating, traded)
-
-
-
-#saveRDS(traded_pollinating, "mean_lambda_traded-pollinating.rds")
+# remove the extra pollination columns
+joined_pollinators <- joined_pollinators %>%
+  select(-confidence, -fact_conf, -comb_conf, -class_name, -ns)
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
-poll_traded_model_1 <- lmer(av_lambda ~ traded * pollinating + (1|language), data = traded_pollinating)
+poll_traded_model_1 <- lmer(av_lambda ~ taxonomic_class * used + (1|language), data = joined_pollinators)
 summary(poll_traded_model_1)
 
 
