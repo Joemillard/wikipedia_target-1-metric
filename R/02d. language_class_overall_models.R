@@ -551,3 +551,43 @@ taxa_plot <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
   ggplot() +
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = pollinating), position = position_dodge(width = 0.5), width = 0.2) +
   geom_point(aes(x = taxonomic_class, y = Median, colour = pollinating), position = position_dodge(width = 0.5), size = 1.5)
+
+# interaction model for pollinating/taxonomic class/used
+joined_pollinators <- joined_pollinators %>%
+  filter(taxonomic_class != "insecta")
+
+poll_traded_model_2 <- lm(av_lambda ~ used * taxonomic_class * language, data = joined_pollinators)
+summary(poll_traded_model_2)
+
+# set up prediction data
+poll_traded_model_2_predicted_values<- predict(poll_traded_model_2, joined_pollinators, se.fit = TRUE)
+
+# create new dataframe for interactions
+joined_pollinators$predicted_values <- poll_traded_model_2_predicted_values$fit
+joined_pollinators$predicted_values_se <- poll_traded_model_2_predicted_values$se.fit
+
+# select unique dataframe with predicted values
+joined_pollinators_fin <- joined_pollinators %>%
+  dplyr::select(taxonomic_class, language, used, predicted_values, predicted_values_se) %>%
+  unique()
+
+joined_pollinators_fin %>%
+  mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
+                                  labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  mutate(taxonomic_class = fct_reorder(taxonomic_class, -predicted_values, median)) %>%
+  #mutate(language = fct_reorder(language, -predicted_values, median)) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
+  geom_errorbar(aes(x = taxonomic_class, colour = used, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), position=position_dodge(width = 0.5), width = 0.2) +
+  geom_point(aes(x = taxonomic_class, colour = used, y = predicted_values), position=position_dodge(width=0.5)) +
+  ylab("Random adjusted average lambda") +
+  facet_wrap(~language) +
+  scale_y_continuous(breaks = c(-0.015, -0.01, -0.005, 0, 0.005), labels = c("-0.015", "-0.010", "-0.005", "0", "0.005")) +
+  #scale_colour_manual("Taxonomic class", values = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.ticks.x = element_blank())
