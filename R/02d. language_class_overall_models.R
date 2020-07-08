@@ -6,6 +6,7 @@ library(lme4)
 library(rvest)
 library(xml2)
 library(forcats)
+library(patchwork)
 
 # source the functions R script
 source("R/00. functions.R")
@@ -454,10 +455,10 @@ traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded
 
 # read in the iucn_titles to match genus name and class for the pollinators - filter out tephrozosterops, which has duplicated wiki id among languages and lower pollination confidence
 iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
-  select(genus_name, class_name, q_wikidata) %>%
+  select(genus_name, class_name, order_name, q_wikidata) %>%
   unique() %>%
   mutate(class_name = tolower(class_name)) %>%
-  filter(class_name %in% c("aves", "reptilia", "insecta", "mammalia")) %>%
+  mutate(order_name = tolower(order_name)) %>%
   filter(genus_name != "Tephrozosterops")
 
 # read in the q_wikidata for traded species
@@ -516,6 +517,9 @@ traded_rates$used[traded_rates$taxonomic_class == "insecta"] <- NA
 # bind the iucn_titles data onto the rates to retrieve the class and genus name
 traded_rates <- left_join(traded_rates, iucn_titles, by = "q_wikidata")
 
+# set any non squamate reptiles to NA
+traded_rates$used[traded_rates$taxonomic_class == "reptilia" & traded_rates$order_name != "squamata"] <- NA
+
 # join rates of change data onto the pollinator data, with full join to keep those that aren't pollinators
 joined_pollinators <- left_join(traded_rates, pollinat, by = c("genus_name" = "genus", "taxonomic_class" = "Class")) %>%
   select(-genus_name) %>%
@@ -526,21 +530,21 @@ joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
 # remove the extra pollination columns
-joined_pollinators <- joined_pollinators %>%
+joined_pollinators_poll <- joined_pollinators %>%
   select(-confidence, -fact_conf, -comb_conf, -class_name, -ns) %>%
-  #filter(site != "frwiki") %>%
+  filter(site != "frwiki") %>%
   filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
-poll_traded_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators)
+poll_traded_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
 summary(poll_traded_model_1)
 
-prediction_data_inter_random <- joined_pollinators %>%
+prediction_data_inter_random <- joined_pollinators_poll %>%
   dplyr::select(taxonomic_class, pollinating, av_lambda) %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-used_random_preds.emp <- sapply(X = 1:10000, iterate_covar_sai, poll_traded_model_1, prediction_data = prediction_data_inter_random)
+used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_1, prediction_data = prediction_data_inter_random)
 
 # extract the median, upper interval, and lower interval for samples
 used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.emp, MARGIN = 1, FUN = median),
@@ -548,13 +552,72 @@ used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.em
                                           Lower = apply(X = used_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
 
 taxa_plot <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
+  mutate(taxonomic_class = factor(taxonomic_class, levels = c("aves", "insecta", "mammalia", "reptilia"), 
+                                  labels = c("Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  mutate(taxonomic_class = fct_reorder(taxonomic_class, -Median, median)) %>%
+  mutate(pollinating = factor(pollinating, levels = c("Y", "N"))) %>%
   ggplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
+  xlab(NULL) +
+  ylab("Average monthly change in SAI") +
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = pollinating), position = position_dodge(width = 0.5), width = 0.2) +
-  geom_point(aes(x = taxonomic_class, y = Median, colour = pollinating), position = position_dodge(width = 0.5), size = 1.5)
+  geom_point(aes(x = taxonomic_class, y = Median, colour = pollinating), position = position_dodge(width = 0.5), size = 1.5) +
+  scale_colour_manual("Pollinating", values = c("#000000", "#E69F00")) +
+  scale_y_continuous(breaks = c(0, 0.001, 0.002), labels = c("0", "0.001", "0.002")) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
+joined_pollinators_use <- joined_pollinators %>%
+  filter(site != "frwiki") %>%
+  filter(taxonomic_class != "insecta")
+
+poll_traded_model_2 <- lmer(av_lambda ~ used * taxonomic_class + (1|language), data = joined_pollinators_use)
+summary(poll_traded_model_1)
+
+prediction_data_inter_random <- joined_pollinators_use %>%
+  dplyr::select(taxonomic_class, used, av_lambda) %>%
+  mutate(av_lambda = 0) %>%
+  unique() %>%
+  slice(1:10)
+
+used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_2, prediction_data = prediction_data_inter_random)
+
+# extract the median, upper interval, and lower interval for samples
+used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.emp, MARGIN = 1, FUN = median),
+                                         Upper = apply(X = used_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                                         Lower = apply(X = used_random_preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+
+taxa_plot_use <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
+  mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "mammalia", "reptilia"), 
+                                  labels = c("Ray finned fishes", "Amphibians", "Birds", "Mammals", "Reptiles"))) %>%
+  mutate(taxonomic_class = fct_reorder(taxonomic_class, -Median, median)) %>%
+  mutate(used = factor(used, levels = c("Y", "N"))) %>%
+  ggplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
+  geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = used), position = position_dodge(width = 0.5), width = 0.2) +
+  geom_point(aes(x = taxonomic_class, y = Median, colour = used), position = position_dodge(width = 0.5), size = 1.5) +
+  scale_y_continuous(breaks = c(0, 0.001, 0.002), labels = c("0", "0.001", "0.002")) +
+  scale_colour_manual("Traded/harvested", values = c("#000000", "#E69F00")) +
+  xlab(NULL) +
+  ylab(NULL) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+  
+taxa_plot + taxa_plot_use + plot_layout(ncol = 1)
+
+ggsave("use_pollinating.png", scale = 1.1, dpi = 350)
+
+
+
+
+
+
+
 
 # interaction model for pollinating/taxonomic class/used
 joined_pollinators <- joined_pollinators %>%
-  filter(taxonomic_class != "insecta")
+  filter(!taxonomic_class %in% c("insecta"))
 
 poll_traded_model_2 <- lm(av_lambda ~ used * taxonomic_class * language, data = joined_pollinators)
 summary(poll_traded_model_2)
@@ -578,7 +641,7 @@ joined_pollinators_fin %>%
   mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
                            labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
   mutate(taxonomic_class = fct_reorder(taxonomic_class, -predicted_values, median)) %>%
-  #mutate(language = fct_reorder(language, -predicted_values, median)) %>%
+  mutate(language = fct_reorder(language, -predicted_values, median)) %>%
   ggplot() + 
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
   geom_errorbar(aes(x = taxonomic_class, colour = used, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), position=position_dodge(width = 0.5), width = 0.2) +
