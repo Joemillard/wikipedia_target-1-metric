@@ -367,10 +367,10 @@ fin_frame_6 %>%
   geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
   geom_errorbar(aes(x = 1, colour = taxonomic_class, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), position=position_dodge(width = 0.5), width = 0.2) +
   geom_point(aes(x = 1, colour = taxonomic_class, y = predicted_values), position=position_dodge(width=0.5)) +
-  ylab("Random adjusted average lambda") +
+  ylab("Monthly change in Species Awareness Index (SAI)") +
   facet_wrap(~language) +
   scale_y_continuous(breaks = c(-0.015, -0.01, -0.005, 0, 0.005), labels = c("-0.015", "-0.010", "-0.005", "0", "0.005")) +
-  scale_colour_manual("Taxonomic class", values = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2")) +
+  scale_colour_manual("Taxonomic class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
   theme_bw() +
   theme(panel.grid = element_blank(), 
         axis.text.x = element_blank(), 
@@ -378,7 +378,7 @@ fin_frame_6 %>%
         axis.ticks.x = element_blank())
 
 # save the plot for interaction of language and class
-ggsave("taxa_language_rate-of-change_3.png", scale = 1.1, dpi = 350)
+ggsave("taxa_language_rate-of-change_3.png", scale = 1, dpi = 350)
 
 # checking model assumptions
 par(mfrow = c(2,2))
@@ -432,6 +432,7 @@ taxa_plot <- cbind(prediction_data_inter_random, inter_random_preds.emp.summ) %>
 ggsave("taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale = 1.1, dpi = 350)
 
 ## models for rate of change predicted as function of pollinator and traded
+# first off, merge the FAO fish and traded species with the rates of change
 # set up string of required wiki projects
 wiki_projects <- c("eswiki", "frwiki", "dewiki", "jawiki", "itwiki", "arwiki", "ruwiki", "ptwiki", "zhwiki", "enwiki")
 
@@ -535,7 +536,7 @@ joined_pollinators_poll <- joined_pollinators %>%
   filter(site != "frwiki") %>%
   filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
-### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
+### models predicting rate of change against pollinating/non-pollinating and traded/non-traded, with language random effect
 poll_traded_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
 summary(poll_traded_model_1)
 
