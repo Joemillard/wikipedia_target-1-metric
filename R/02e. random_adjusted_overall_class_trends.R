@@ -281,18 +281,20 @@ for(j in 1:length(lpi_trends_adjusted)){
 rbindlist(all_frames) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
-  mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
-                       labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  mutate(taxa = factor(taxa, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
+                       labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
   ggplot() +
   #geom_point(aes(x = Year, y = LPI), size = 1.25) +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
-  geom_line(aes(x = Year, y = LPI), size = 1) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = taxa), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI, colour = taxa), size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_colour_manual("Benchmark month", na.translate = F, values = c("#009E73", "#D55E00")) +
+  scale_colour_manual("Taxonomic class", na.translate = F, values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_fill_manual("Taxonomic class", na.translate = F, values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_y_continuous(breaks = c(0.8, 1, 1.2), labels = c("0.8", "1", "1.2")) +
   facet_wrap(~taxa) +
-  ylab("SAI") +
+  ylab("Species Awareness Index (SAI)") +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 1.1, dpi = 350)
+ggsave("average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 1, dpi = 350)
