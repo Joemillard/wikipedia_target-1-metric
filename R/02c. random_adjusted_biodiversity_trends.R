@@ -199,26 +199,36 @@ for(i in 1:length(smoothed_adjusted_lamda)){
 # bind together the trend for all languages
 fin_bound_trends <- rbindlist(bound_trends)
 
+formatter <- function(...){
+  function(x) format(round(x, 1), ...)
+}
+
 # plot all the class level trends
 fin_bound_trends %>%
   mutate(Year = as.numeric(Year)) %>%
   filter(taxa != "random_data") %>%
-  mutate(taxa = factor(taxa, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random_data"),
-                       labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles", "Random"))) %>%
+  mutate(taxa = factor(taxa, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
+                       labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
   mutate(language = factor(language, levels = c("\\^ar_", "\\^zh_", "\\^en_", "\\^fr_", "\\^de_", "\\^it_", "\\^ja_", "\\^pt_", "\\^ru_", "\\^es_"),
                            labels = c("Arabic", "Chinese", "English", "French", "German", "Italian", "Japanese", "Portuguese", "Russian", "Spanish"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = language), alpha = 0.4) +
-  geom_line(aes(x = Year, y = LPI, colour = language)) +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = taxa), alpha = 0.4) +
+  geom_line(aes(x = Year, y = LPI, colour = taxa)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
-  scale_colour_manual("Language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
+  scale_fill_manual("Class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_colour_manual("Class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", x)) +
   facet_grid(language~taxa, scales = "free_y") +
-  ylab("SAI") +
+  ylab("Species Awareness Index (SAI)") +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1))
+        axis.text.x = element_text(size = 12, angle = 45, hjust = 1), 
+        axis.title.y = element_text(size = 13, vjust = 2),
+        strip.text.y = element_text(size = 11, angle = 45),
+        strip.text.x = element_text(size = 11),
+        legend.title = element_text(size = 13),
+        legend.text = element_text(size = 11))
 
 ggsave("random_adjusted_class_SAI_free_1000_95_no-random-species_smoothed.png", scale = 1.5, dpi = 350)
 
