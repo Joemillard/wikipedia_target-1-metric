@@ -16,7 +16,7 @@ directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/avera
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
-view_directories <- function(classes, directory){
+view_directories <- function(classes, directory, languages){
   
   # bring in all the files in that directory and assign to a list
   view_files <- list()
@@ -26,6 +26,7 @@ view_directories <- function(classes, directory){
   
   # unlist the files in the correct order
   file_order <- unlist(view_files)
+  #print(file_order)
   
   # set up empty list for files for each language
   user_files_dir <- list()
@@ -34,6 +35,8 @@ view_directories <- function(classes, directory){
   # set up each of the file directories and order consisten with the random overall trend
   for(i in 1:length(classes)){
     user_files[[i]] <- list.files(directory, pattern = classes[i])
+    #print(user_files[[i]])
+    user_files[[i]] <- user_files[[i]][user_files[[i]] %in% file_order]
     user_files[[i]] <- user_files[[i]][order(match(user_files[[i]], file_order))]
     user_files_dir[[i]] <- paste0(directory, "/", user_files[[i]])
   }
@@ -264,10 +267,13 @@ jack_knifed_class <- rbindlist(bound_trends) %>%
   scale_fill_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_colour_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_y_continuous(breaks = c(1.05, 1, 0.95, 0.9, 0.85, 0.8), labels = c("1.05","1", "0.95", "0.9", "0.85", "0.8")) +
-  ylab("Overall Species Awareness Index (SAI)") +
+  ylab("Species Awareness Index (SAI)") +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank())
+
+# save the jack-knifed plot for supp material
+ggsave("overall_index_jack_1000_95.png", scale = 0.9, dpi = 350)
 
 ## after jack-knifing, remove the language/languages that have a big influence on the overall index
 
@@ -324,7 +330,7 @@ rbindlist(random_trend) %>%
 
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes,
-                               directory, 
+                               directory,
                                languages)
 
 # read in all the files in groups for each language
@@ -411,17 +417,18 @@ all_class_no_french <- rbindlist(language_frame) %>%
   mutate(Year = as.numeric(Year)) %>%
   mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
   ggplot() +
-  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3, fill = "#4DAF4A") +
-  geom_line(aes(x = Year, y = LPI), colour = "#4DAF4A") +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  ylab("") +
-  scale_y_continuous(breaks = c(1.05, 1, 0.95), labels = c("1.05","1", "0.95")) +
+  ylab("Species Awareness Index (SAI)") +
+  scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
   xlab(NULL) +
   theme_bw() +
-  theme(panel.grid = element_blank())
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 12, vjust = 2))
 
-# combine the jack-knifed and overall figure
-jack_knifed_class + all_class_no_french + plot_layout(ncol = 1)
-
+# save the overall trend for the main text
+ggsave("overall_index_1000_95.png", scale = 0.8, dpi = 350)
 
 ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species_smoothed_no-french_jack.png", scale = 1, dpi = 350)
