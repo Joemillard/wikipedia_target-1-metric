@@ -188,7 +188,8 @@ for(l in 1:length(languages_orig)){
 
   # run the function with 10 languages, specifying the directory
   user_files <- view_directories(classes,
-                               directory)
+                               directory,
+                               languages)
 
   # read in all the files in groups for each language
   language_views <- list()
