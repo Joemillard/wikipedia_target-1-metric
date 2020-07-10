@@ -376,7 +376,7 @@ for(i in 1:length(box_classes)){
 class_box_plot[[i]] <- box_classes[[i]] %>%
   mutate(class = fct_reorder(class, -total_views, median)) %>%
   ggplot() +
-    geom_boxplot(aes(class, log10(total_views))) +
+    geom_boxplot(aes(class, log10(total_views)), outlier.shape = NA, size = 0.2) +
     facet_wrap(~language) +
     scale_y_continuous(limits = c(0, 7.5), breaks = c(0, 2, 4, 6), labels = c("1", "100", "10,000", "1,000,000")) +
     xlab(NULL) +
@@ -398,3 +398,5 @@ box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article vie
 
 
 ggsave("total_view_distribution.png", scale = 1.1, dpi = 350)
+
+# build plot of median views for pollinating and non-pollinating and traded/non-traded
