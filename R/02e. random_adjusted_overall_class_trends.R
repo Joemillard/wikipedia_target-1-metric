@@ -70,7 +70,7 @@ rbindlist(random_trend) %>%
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
-view_directories <- function(classes, directory){
+view_directories <- function(classes, directory, languages){
   
   # bring in all the files in that directory and assign to a list
   view_files <- list()
@@ -80,6 +80,7 @@ view_directories <- function(classes, directory){
   
   # unlist the files in the correct order
   file_order <- unlist(view_files)
+  #print(file_order)
   
   # set up empty list for files for each language
   user_files_dir <- list()
@@ -88,6 +89,8 @@ view_directories <- function(classes, directory){
   # set up each of the file directories and order consisten with the random overall trend
   for(i in 1:length(classes)){
     user_files[[i]] <- list.files(directory, pattern = classes[i])
+    #print(user_files[[i]])
+    user_files[[i]] <- user_files[[i]][user_files[[i]] %in% file_order]
     user_files[[i]] <- user_files[[i]][order(match(user_files[[i]], file_order))]
     user_files_dir[[i]] <- paste0(directory, "/", user_files[[i]])
   }
@@ -98,7 +101,8 @@ view_directories <- function(classes, directory){
 
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes,
-                               directory)
+                               directory,
+                               languages)
 
 # read in all the files in groups for each language
 language_views <- list()
@@ -284,7 +288,6 @@ rbindlist(all_frames) %>%
   mutate(taxa = factor(taxa, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
                        labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
   ggplot() +
-  #geom_point(aes(x = Year, y = LPI), size = 1.25) +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = taxa), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI, colour = taxa), size = 1) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
@@ -297,4 +300,4 @@ rbindlist(all_frames) %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 1, dpi = 350)
+ggsave("average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 0.9, dpi = 350)
