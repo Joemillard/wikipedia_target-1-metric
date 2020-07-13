@@ -215,8 +215,8 @@ fin_bound_trends %>%
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr, fill = taxa), alpha = 0.4) +
   geom_line(aes(x = Year, y = LPI, colour = taxa)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  scale_fill_manual("Class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
-  scale_colour_manual("Class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_fill_manual("Taxonomic class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  scale_colour_manual("Taxonomic class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
   scale_y_continuous(labels = function(x) ifelse(x == 0, "0", x)) +
   facet_grid(language~taxa, scales = "free_y") +
   ylab("Species Awareness Index (SAI)") +
