@@ -208,7 +208,7 @@ calc_views <- function(data_file){
 
 # build new plot for the number of views after removing the random pages that are in the species trend
 views_remove_species <- lapply(total_random_views_2, calc_views) %>%
-  rbindlist() %>%
+  rbindlist() %>% sum()
   mutate(language = languages)
 
 # run function for each language views and build bar plot
@@ -259,7 +259,7 @@ for(i in 1:length(count_number_months)){
 }
 
 # plot the complete series for random pages
-all_series_frame <- rbindlist(series_frame) %>%
+all_series_frame <- rbindlist(series_frame) %>% 
   mutate(languages = factor(languages, levels = languages, labels = c("Spanish", "French", "German", "Japanese", "Italian", 
                                                  "Arabic", "Russian", "Portuguese", "Chinese", "English"))) %>%
   mutate(languages = fct_reorder(languages, -counter)) %>%

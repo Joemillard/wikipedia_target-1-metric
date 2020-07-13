@@ -45,31 +45,34 @@ run_count_total <- function(data_file, languages, classes){
 
 ## plot number of species for each language, for all series, with separate factor order on the x axis - slice for each language
 ind_species_plot <- list()
+ind_species <- list()
 step <- 6
 for(i in 1:length(languages_short)){
-  ind_species_plot[[i]] <- run_count_total(total_monthly_views, languages_short, classes) %>%
+  ind_species[[i]] <- run_count_total(total_monthly_views, languages_short, classes) %>%
     reshape2::melt(id  = "language") %>%
     arrange(language) %>%
     group_by(language) %>%
     mutate(total = sum(value)) %>%
     ungroup() %>%
     arrange(desc(total)) %>% 
-    slice((step-5):step) %>% print() %>%
+    slice((step-5):step) %>% 
     mutate(language = factor(language, levels = languages_short, 
                             labels = c("Spanish", "French", "German", "Japanese", "Italian", 
-                                      "Arabic", "Russian", "Portuguese", "Chinese (Mandarin)", "English"))) %>%
+                                      "Arabic", "Russian", "Portuguese", "Chinese", "English"))) %>%
     mutate(language = fct_reorder(language, -value)) %>%
-    mutate(variable = fct_reorder(variable, -value)) %>%
-    ggplot() +
-      geom_bar(aes(x = variable, y = value), stat = "identity") +
-      facet_wrap(~language) +
-      xlab(NULL) +
-      scale_y_continuous(limits = c(0, 11000), expand = c(0, 0)) +
-      ylab(NULL) +
-      theme_bw() +
-      theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
-            panel.grid = element_blank(), 
-            axis.title.y = element_text(size = 13, vjust = 0.9))
+    mutate(variable = fct_reorder(variable, -value))
+  
+  ind_species_plot[[i]] <- ind_species[[i]] %>%
+      ggplot() +
+        geom_bar(aes(x = variable, y = value), stat = "identity") +
+        facet_wrap(~language) +
+        xlab(NULL) +
+        scale_y_continuous(limits = c(0, max(ind_species[[i]]$value * 1.1)), expand = c(0, 0)) +
+        ylab(NULL) +
+        theme_bw() +
+        theme(axis.text.x = element_text(angle = 45, vjust = 0.9, hjust = 1), 
+              panel.grid = element_blank(), 
+              axis.title.y = element_text(size = 13, vjust = 0.9))
     
   # step up slice of data for languages
     step <- step + 6
@@ -91,7 +94,10 @@ combine_plots <- function(plot_list){
 }
 
 # run the function to combine all plots, and add the column layout
-total_species_plot <- {combine_plots(ind_species_plot) + plot_layout(ncol = 5)}
+total_species_plot <- {combine_plots((ind_species_plot[[1]] + ylab("Total species")) + ind_species_plot[2:5] + (ind_species_plot[[6]] + ylab("Total species")) + ind_species_plot[7:10]) + plot_layout(ncol = 5)}
+
+# save the plot for species in each language
+ggsave("all_language_species_plot.png", scale = 1.1, dpi = 350)
 
 # assign a class column for each subset and collapse all lists to single dataframe
 class_views <- list()
@@ -112,17 +118,47 @@ class_views_plot <- rbindlist(class_views) %>%
   ggplot() +
     geom_bar(aes(x = class, y = n), stat = "identity") +
     scale_y_continuous(expand = c(0, 0), limits = c(0, 15000)) +
-    xlab("") +
+    xlab(NULL) +
     ylab("Total species") +
     theme_bw() +
     theme(panel.grid = element_blank(), 
-          axis.title.y = element_text(size = 13))
+          axis.title.y = element_text(size = 13),
+          axis.text = element_text(size = 11))
 
-# combine the plots for the number of species in each class and the number of species in each language
-total_species_language <- class_views_plot + total_species_plot + plot_layout(ncol = 1)
+# plot for number of views in each language
+# calculate total views for each language
+group_views <- function(data_file, languages){
+  language_total <- c(rep(0, 10))
+  for(i in 1:length(data_file)){
+    for(j in 1:length(data_file[[i]])){
+      language_total[[i]] <- language_total[[i]] + sum(data_file[[i]][[j]]$av_views, na.rm = TRUE)
+    }
+  }
+  
+  # build dataframe for views for each language and return it
+  language_total <- data.frame("language" = languages, "views" = language_total)
+  return(language_total)
+}
 
-# save the combined plot
-ggsave("outputs/total_language_species_2.png", scale = 1.3, dpi = 350)
+# run function for each language views and build bar plot
+plot_views <- group_views(total_monthly_views, languages = languages_full) %>%
+  mutate(language = fct_reorder(language, -views)) %>%
+  ggplot() +
+  geom_bar(aes(x = language, y = views), stat = "identity") + 
+  geom_text(aes(x = language, y = views + 50000000, label = (round(views/1000000, digits = 2)))) +
+  xlab(NULL) +
+  ylab("Total user views (millions)") +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1200000000), 
+                     breaks = c(0, 300000000, 600000000, 900000000, 1200000000), labels = c("0", "300", "600", "900", "1200")) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 13))
+
+# combine the plots for the total species for all class/languages and views for all languages
+plot_views + class_views_plot + plot_layout(ncol = 1)
+
+ggsave("all_language_views-species.png", scale = 1.2, dpi = 350)
 
 ## plot for complete time series
 # count number of months of views per article
@@ -181,7 +217,8 @@ full_series_plot <- list()
 for(i in 1:length(all_series_frame)){
   full_series_plot[[i]] <- all_series_frame[[i]] %>%
     mutate(languages = factor(languages, levels = language_order[i], labels = updated_language_order[i])) %>%
-    mutate(classes = fct_reorder(classes, -total_number)) %>%    
+    mutate(classes = fct_reorder(classes, -total_number)) %>% 
+    print()
     ggplot() +
     geom_bar(aes(x = classes, y = total_number), position = "identity", stat = "identity") +
     geom_bar(aes(x = classes, y = counter, fill = "Complete series"), position = "identity", stat = "identity") +
