@@ -4,6 +4,7 @@ library(data.table)
 library(ggplot2)
 library(forcats)
 library(patchwork)
+library(lme4)
 
 # read in the total monthly view data
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
@@ -217,9 +218,177 @@ box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article vie
                                     class_box_plot[7:9] + (class_box_plot[[10]] + theme(legend.position = "right"))) +
     plot_layout(ncol = 5)}
 
-
 # save plot of traded/non-traded species on Wikipedia
 ggsave("traded_species_wikipedia_boxplot.png", scale = 1.3, dpi = 350)
+
+# dataframe of article views for modelling
+trade_dataframe <- list()
+for(i in 1:length(box_classes)){
+  trade_dataframe[[i]] <- box_classes[[i]] %>%
+    filter(!class_name %in% c("insecta")) %>%
+    mutate(class_name = factor(class_name, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
+                               labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
+    mutate(used = fct_reorder(used, -total_views, median)) 
+}
+
+# rbind together the views, language, class data
+all_trade_data <- rbindlist(trade_dataframe) %>%
+  filter(class_name != "insecta") %>%
+  droplevels()
+
+# build model predicting total number of views
+trade_model <- lme4::lmer(log10(total_views) ~ used * class_name + (1|language), data = all_trade_data)
+summary(trade_model)
+
+trade_model_1 <- lme4::lmer(log10(total_views) ~ used + (1|language), data = all_trade_data)
+trade_model_2 <- lme4::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
+
+# check AIC values
+AIC(trade_model, trade_model_1, trade_model_2)
+
+# call in MASS here specifically for sampleing
+iterate_covar_sai <- function(i, model, prediction_data){
+  
+  # extract fixed effects from covariance matrix 
+  coefs <- MASS::mvrnorm(n = 1, mu = fixef(object = model), Sigma = vcov(object = model))
+  mm <- model.matrix(terms(model), prediction_data)
+  y <- mm %*% coefs
+  
+  # return the vector of adjusted values for that sample
+  return(y)
+}
+
+# build prediction data for animal trade
+trade_prediction_data <- all_trade_data %>%
+  dplyr::select(class_name, total_views, used, language) %>%
+  mutate(total_views = 0) %>%
+  unique()
+
+# predict values using function to draw fixed effects from covariance matrix
+preds.emp <- sapply(X = 1:1000, iterate_covar_sai, trade_model, prediction_data = trade_prediction_data)
+
+# extract the median, upper interval, and lower interval for samples
+preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
+                                       Upper = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                                       Lower = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+
+# plot of median effect for total views
+cbind(trade_prediction_data, preds.emp.summ) %>%
+  mutate(class_name = fct_reorder(class_name, -Median)) %>%
+  ggplot() +
+
+    geom_errorbar(aes(x = class_name, ymin = Lower, ymax = Upper, colour = used), width = 0.2, position = position_dodge(width = 0.5)) +
+    geom_point(aes(x = class_name, y = Median, colour = used), position=position_dodge(width = 0.5)) + 
+    scale_y_continuous("Total article views", breaks = c(2.39794, 2.69897, 3, 3.30103, 3.60206, 3.90309, 4.20412), labels = c(250, 500, 10^3, 2000, 4000, 8000, 16000)) +
+    scale_colour_manual("Traded or harvested", values = c("#000000", "red"), labels = c("Yes", "No")) +
+    coord_cartesian(ylim = c(2.1, 4.4), xlim = c(1.1, 4.9)) +
+    geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0.05, width = 1) +
+    geom_bar(aes(y = 4, x = "Birds"), stat = "identity", alpha = 0.025, width = 1) +
+    geom_bar(aes(y = 4, x = "Reptiles"), stat = "identity", alpha = 0.05, width = 1) +
+    geom_bar(aes(y = 4, x = "Ray finned fishes"), stat = "identity", alpha = 0.025, width = 1) +
+    geom_bar(aes(y = 4, x = "Amphibians"), stat = "identity", alpha = 0.05, width = 1) +
+    theme_bw() +
+    theme(panel.grid = element_blank(), 
+          axis.title.x = element_blank(), 
+          axis.text.x = element_text(angle = 45, hjust = 1), 
+          text = element_text(size = 12))
+
+ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
+
+### pollinator dataframe of article views for modelling
+# function for calculating average views for each class for a given language
+set_up_box_plot_pollinators <- function(data_file){
+  data_fin <- data_file %>%
+    group_by(class_name, pollinating, q_wikidata) %>% 
+    summarise(total_views = sum(av_views)) %>% 
+    ungroup()
+  return(data_fin)
+}
+
+# run function to calculate average views per class over all languages
+box_classes <- lapply(bound_views, set_up_box_plot_pollinators)
+
+# add column for language
+for(i in 1:length(box_classes)){
+  box_classes[[i]]$language <- languages_full[i]
+}
+
+pollinator_dataframe <- list()
+for(i in 1:length(box_classes)){
+  pollinator_dataframe[[i]] <- box_classes[[i]] %>%
+    filter(!class_name %in% c("amphibia", "actinopterygii")) %>%
+    mutate(class_name = factor(class_name, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
+                               labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
+    mutate(pollinating = fct_reorder(pollinating, -total_views, median)) 
+}
+
+# rbind together the views, language, class data
+all_poll_data <- rbindlist(pollinator_dataframe) %>%
+  filter(!class_name %in% c("amphibia", "actinopterygii")) %>%
+  droplevels()
+
+# build model predicting total number of views
+pollinator_model <- lme4::lmer(log10(total_views) ~ pollinating * class_name + (1|language), data = all_poll_data)
+summary(pollinator_model)
+
+pollinator_model_1 <- lme4::lmer(log10(total_views) ~ pollinating + (1|language), data = all_poll_data)
+pollinator_model_2 <- lme4::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
+
+# check AIC values
+AIC(pollinator_model, pollinator_model_1, pollinator_model_2)
+
+# call in MASS here specifically for sampleing
+iterate_covar_sai <- function(i, model, prediction_data){
+  
+  # extract fixed effects from covariance matrix 
+  coefs <- MASS::mvrnorm(n = 1, mu = fixef(object = model), Sigma = vcov(object = model))
+  mm <- model.matrix(terms(model), prediction_data)
+  y <- mm %*% coefs
+  
+  # return the vector of adjusted values for that sample
+  return(y)
+}
+
+# build prediction data for animal trade
+poll_prediction_data <- all_poll_data %>%
+  dplyr::select(class_name, total_views, pollinating, language) %>%
+  mutate(total_views = 0) %>%
+  unique()
+
+# predict values using function to draw fixed effects from covariance matrix
+preds.emp <- sapply(X = 1:1000, iterate_covar_sai, pollinator_model, prediction_data = poll_prediction_data)
+
+# extract the median, upper interval, and lower interval for samples
+preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = median),
+                             Upper = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.975),
+                             Lower = apply(X = preds.emp, MARGIN = 1, FUN = quantile, probs = 0.025))
+
+# plot of median effect for total views
+cbind(poll_prediction_data, preds.emp.summ) %>%
+  mutate(class_name = fct_reorder(class_name, -Median)) %>%
+  ggplot() +
+  
+  geom_errorbar(aes(x = class_name, ymin = Lower, ymax = Upper, colour = pollinating), width = 0.2, position = position_dodge(width = 0.5)) +
+  geom_point(aes(x = class_name, y = Median, colour = pollinating), position=position_dodge(width = 0.5)) + 
+  scale_y_continuous("Total article views", breaks = c(2.39794, 2.69897, 3, 3.30103, 3.60206, 3.90309, 4.20412), labels = c(250, 500, 10^3, 2000, 4000, 8000, 16000)) +
+  scale_colour_manual("Traded or harvested", values = c("#000000", "red"), labels = c("Yes", "No")) +
+  #coord_cartesian(ylim = c(2.1, 4.4), xlim = c(1.1, 4.9)) +
+  #geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0.05, width = 1) +
+  #geom_bar(aes(y = 4, x = "Birds"), stat = "identity", alpha = 0.025, width = 1) +
+  #geom_bar(aes(y = 4, x = "Reptiles"), stat = "identity", alpha = 0.05, width = 1) +
+  #geom_bar(aes(y = 4, x = "Ray finned fishes"), stat = "identity", alpha = 0.025, width = 1) +
+  #geom_bar(aes(y = 4, x = "Amphibians"), stat = "identity", alpha = 0.05, width = 1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1), 
+        text = element_text(size = 12))
+
+ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
+
+trade_model_2 <- lm(log10(total_views) ~ used * class_name * language, data = all_trade_data)
+summary(trade_model_2)
+
 
 
 
