@@ -433,3 +433,62 @@ all_class_no_french <- rbindlist(language_frame) %>%
 ggsave("overall_index_1000_95.png", scale = 0.8, dpi = 350)
 
 ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species_smoothed_no-french_jack.png", scale = 1, dpi = 350)
+
+# plot of basic trends for use in discussion figure, with rescaling
+all_class_no_french_diagram <- rbindlist(language_frame) %>%
+  select(series_start, average_lambda, factor_rate) %>%
+  unique() %>% 
+  bind_rows(data.frame("average_lambda" = NA,
+                       "factor_rate" = NA,
+                       "series_start" = 57)) %>%
+  mutate(Year = random_trend[[1]]$Year) %>%
+  mutate(LPI = lpi_trends_adjusted$LPI) %>%
+  mutate(LPI_upr = lpi_trends_adjusted$LPI_upr) %>%
+  mutate(LPI_lwr = lpi_trends_adjusted$LPI_lwr) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI), size = 3) +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+  ylab(NULL) +
+  scale_y_continuous(breaks = c(1), labels = c("0")) +
+  xlab("") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.y = element_text(size = 25),
+        panel.border = element_rect(size = 3))
+
+# plot of basic trends for use in discussion figure, with rescaling
+all_class_no_french_diagram_rescale <- rbindlist(language_frame) %>%
+  select(series_start, average_lambda, factor_rate) %>%
+  unique() %>% 
+  bind_rows(data.frame("average_lambda" = NA,
+                       "factor_rate" = NA,
+                       "series_start" = 57)) %>%
+  mutate(Year = random_trend[[1]]$Year) %>%
+  mutate(LPI = lpi_trends_adjusted$LPI) %>%
+  mutate(LPI_upr = lpi_trends_adjusted$LPI_upr) %>%
+  mutate(LPI_lwr = lpi_trends_adjusted$LPI_lwr) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing")))
+
+diagram_rescale <- all_class_no_french_diagram_rescale %>%
+  ggplot() +
+  geom_line(aes(x = Year, y = LPI), size = 3) +
+  ylab(NULL) +
+  scale_y_continuous(breaks = c(min(all_class_no_french_diagram_rescale$LPI), max(all_class_no_french_diagram_rescale$LPI)), labels = c("0", "100")) +
+  xlab(NULL) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 25),
+        axis.ticks.x = element_blank(),
+        panel.border = element_rect(size = 3))
+
+# combine the plots for diagram
+all_class_no_french_diagram + diagram_rescale + plot_layout(ncol = 1)
+
+# save the combined diagram plot
+ggsave("rescale_diagram.png", scale = 1, dpi = 350)
