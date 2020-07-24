@@ -608,3 +608,54 @@ taxa_plot_use <- cbind(prediction_data_inter_random, used_random_preds.emp.summ)
 taxa_plot + taxa_plot_use + plot_layout(ncol = 1)
 
 ggsave("use_pollinating.png", scale = 1.1, dpi = 350)
+
+# plot broken down by three way interaction for trade, taxa, language
+joined_pollinators_use <- joined_pollinators %>%
+  filter(taxonomic_class != "insecta")
+
+poll_traded_model_3 <- lm(av_lambda ~ used * taxonomic_class * language, data = joined_pollinators_use)
+summary(poll_traded_model_3)
+
+# set up prediction data
+predicted_val <- predict(poll_traded_model_3, joined_pollinators_use, se.fit = TRUE)
+
+# create new dataframe for interactions
+final_bound_interaction <- joined_pollinators_use
+final_bound_interaction$predicted_values <- predicted_val$fit
+final_bound_interaction$predicted_values_se <- predicted_val$se.fit
+
+# select unique dataframe with predicted values
+fin_frame_6 <- final_bound_interaction %>%
+  dplyr::select(taxonomic_class, language, used, predicted_values, predicted_values_se) %>%
+  unique()
+
+# dataframe for circling China fishes
+china_fishes <- data.frame(x = "Ray finned fishes", language = "Chinese", y = 1.603572e-03) %>%
+  mutate(language = factor(language, levels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian")))
+
+# add labels for factors, sort by predicted value for language and class, and then plot
+fin_frame_6 %>%
+  filter(!is.na(predicted_values)) %>%
+  mutate(taxonomic_class = factor(taxonomic_class, levels = c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia"),
+                                  labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
+  
+  mutate(language = factor(language, levels = c("\\^ar_", "\\^fr_", "\\^zh_", "\\^en_", "\\^de_", "\\^es_", "\\^it_", "\\^ja_", "\\^pt_" , "\\^ru_"),
+                           labels = c("Arabic", "French", "Chinese", "English", "German", "Spanish", "Italian", "Japanese", "Portuguese", "Russian"))) %>%
+  mutate(taxonomic_class = fct_reorder(taxonomic_class, -predicted_values, median)) %>%
+  mutate(language = fct_reorder(language, -predicted_values, median)) %>%
+  mutate(used = factor(used, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
+  ggplot() + 
+  geom_hline(yintercept = 0, linetype = "dashed", size = 1, colour = "grey") +
+  geom_errorbar(aes(x = taxonomic_class, colour = used, y = predicted_values, ymin = (predicted_values - (1.96 * predicted_values_se)), ymax = (predicted_values + (1.96 * predicted_values_se))), position=position_dodge(width = 0.5), width = 0.2) +
+  geom_point(aes(x = taxonomic_class, colour = used, y = predicted_values), position=position_dodge(width=0.5)) +
+  geom_point(aes(x = x, y = y), data = china_fishes, shape = 1, size = 8, colour = "red") +
+  ylab("Monthly change in Species Awareness Index (SAI)") +
+  facet_wrap(~language, ncol = 5) +
+  scale_y_continuous(breaks = c(-0.0025, 0, 0.0025, 0.005), labels = c("-0.0025", "0", "0.0025", "0.005")) +
+  scale_colour_manual("Traded", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
+  theme_bw() +
+  theme(panel.grid = element_blank(), 
+        axis.text.x = element_text(angle = 45, hjust = 1), 
+        axis.title.x = element_blank())
+
+ggsave("trade_language_taxa.png", scale = 1.1, dpi = 350)

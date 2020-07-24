@@ -218,7 +218,7 @@ for(i in 1:length(all_series_frame)){
   full_series_plot[[i]] <- all_series_frame[[i]] %>%
     mutate(languages = factor(languages, levels = language_order[i], labels = updated_language_order[i])) %>%
     mutate(classes = fct_reorder(classes, -total_number)) %>% 
-    print()
+    print() %>%
     ggplot() +
     geom_bar(aes(x = classes, y = total_number), position = "identity", stat = "identity") +
     geom_bar(aes(x = classes, y = counter, fill = "Complete series"), position = "identity", stat = "identity") +

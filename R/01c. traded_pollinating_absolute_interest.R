@@ -282,11 +282,11 @@ cbind(trade_prediction_data, preds.emp.summ) %>%
     scale_y_continuous("Total article views", breaks = c(2.39794, 2.69897, 3, 3.30103, 3.60206, 3.90309, 4.20412), labels = c(250, 500, 10^3, 2000, 4000, 8000, 16000)) +
     scale_colour_manual("Traded or harvested", values = c("#000000", "red"), labels = c("Yes", "No")) +
     coord_cartesian(ylim = c(2.1, 4.4), xlim = c(1.1, 4.9)) +
-    geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0.05, width = 1) +
+    geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0, width = 1) +
     geom_bar(aes(y = 4, x = "Birds"), stat = "identity", alpha = 0.025, width = 1) +
-    geom_bar(aes(y = 4, x = "Reptiles"), stat = "identity", alpha = 0.05, width = 1) +
+    geom_bar(aes(y = 4, x = "Reptiles"), stat = "identity", alpha = 0, width = 1) +
     geom_bar(aes(y = 4, x = "Ray finned fishes"), stat = "identity", alpha = 0.025, width = 1) +
-    geom_bar(aes(y = 4, x = "Amphibians"), stat = "identity", alpha = 0.05, width = 1) +
+    geom_bar(aes(y = 4, x = "Amphibians"), stat = "identity", alpha = 0, width = 1) +
     theme_bw() +
     theme(panel.grid = element_blank(), 
           axis.title.x = element_blank(), 
