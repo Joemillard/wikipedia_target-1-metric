@@ -537,8 +537,6 @@ joined_pollinators_poll <- joined_pollinators %>%
   filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded, with language random effect
-library()
-
 poll_traded_model_1 <- lmerTest::lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
 summary(poll_traded_model_1)
 anova(poll_traded_model_1)
