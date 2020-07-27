@@ -537,8 +537,11 @@ joined_pollinators_poll <- joined_pollinators %>%
   filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded, with language random effect
-poll_traded_model_1 <- lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
+library()
+
+poll_traded_model_1 <- lmerTest::lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
 summary(poll_traded_model_1)
+anova(poll_traded_model_1)
 
 prediction_data_inter_random <- joined_pollinators_poll %>%
   dplyr::select(taxonomic_class, pollinating, av_lambda) %>%
@@ -573,8 +576,9 @@ joined_pollinators_use <- joined_pollinators %>%
   filter(site != "frwiki") %>%
   filter(taxonomic_class != "insecta")
 
-poll_traded_model_2 <- lmer(av_lambda ~ used * taxonomic_class + (1|language), data = joined_pollinators_use)
+poll_traded_model_2 <- lmerTest::lmer(av_lambda ~ used * taxonomic_class + (1|language), data = joined_pollinators_use)
 summary(poll_traded_model_1)
+anova(poll_traded_model_2)
 
 prediction_data_inter_random <- joined_pollinators_use %>%
   dplyr::select(taxonomic_class, used, av_lambda) %>%
