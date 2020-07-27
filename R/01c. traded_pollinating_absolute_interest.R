@@ -237,11 +237,12 @@ all_trade_data <- rbindlist(trade_dataframe) %>%
   droplevels()
 
 # build model predicting total number of views
-trade_model <- lme4::lmer(log10(total_views) ~ used * class_name + (1|language), data = all_trade_data)
+trade_model <- lmerTest::lmer(log10(total_views) ~ used * class_name + (1|language), data = all_trade_data)
 summary(trade_model)
+anova(trade_model)
 
-trade_model_1 <- lme4::lmer(log10(total_views) ~ used + (1|language), data = all_trade_data)
-trade_model_2 <- lme4::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
+trade_model_1 <- lmerTest::lmer(log10(total_views) ~ used + (1|language), data = all_trade_data)
+trade_model_2 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
 
 # check AIC values
 AIC(trade_model, trade_model_1, trade_model_2)
@@ -328,11 +329,12 @@ all_poll_data <- rbindlist(pollinator_dataframe) %>%
   droplevels()
 
 # build model predicting total number of views
-pollinator_model <- lme4::lmer(log10(total_views) ~ pollinating * class_name + (1|language), data = all_poll_data)
+pollinator_model <- lmerTest::lmer(log10(total_views) ~ pollinating * class_name + (1|language), data = all_poll_data)
 summary(pollinator_model)
+anova(pollinator_model)
 
-pollinator_model_1 <- lme4::lmer(log10(total_views) ~ pollinating + (1|language), data = all_poll_data)
-pollinator_model_2 <- lme4::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
+pollinator_model_1 <- lmerTest::lmer(log10(total_views) ~ pollinating + (1|language), data = all_poll_data)
+pollinator_model_2 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
 
 # check AIC values
 AIC(pollinator_model, pollinator_model_1, pollinator_model_2)
@@ -366,18 +368,13 @@ preds.emp.summ <- data.frame(Median = apply(X = preds.emp, MARGIN = 1, FUN = med
 # plot of median effect for total views
 cbind(poll_prediction_data, preds.emp.summ) %>%
   mutate(class_name = fct_reorder(class_name, -Median)) %>%
+  mutate(pollinating = factor(pollinating, levels = c("Y", "N"), labels = c("Yes", "No"))) %>%
   ggplot() +
   
   geom_errorbar(aes(x = class_name, ymin = Lower, ymax = Upper, colour = pollinating), width = 0.2, position = position_dodge(width = 0.5)) +
   geom_point(aes(x = class_name, y = Median, colour = pollinating), position=position_dodge(width = 0.5)) + 
   scale_y_continuous("Total article views", breaks = c(2.39794, 2.69897, 3, 3.30103, 3.60206, 3.90309, 4.20412), labels = c(250, 500, 10^3, 2000, 4000, 8000, 16000)) +
-  scale_colour_manual("Traded or harvested", values = c("#000000", "red"), labels = c("Yes", "No")) +
-  #coord_cartesian(ylim = c(2.1, 4.4), xlim = c(1.1, 4.9)) +
-  #geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0.05, width = 1) +
-  #geom_bar(aes(y = 4, x = "Birds"), stat = "identity", alpha = 0.025, width = 1) +
-  #geom_bar(aes(y = 4, x = "Reptiles"), stat = "identity", alpha = 0.05, width = 1) +
-  #geom_bar(aes(y = 4, x = "Ray finned fishes"), stat = "identity", alpha = 0.025, width = 1) +
-  #geom_bar(aes(y = 4, x = "Amphibians"), stat = "identity", alpha = 0.05, width = 1) +
+  scale_colour_manual("Traded or harvested", values = c("#000000", "red")) +
   theme_bw() +
   theme(panel.grid = element_blank(), 
         axis.title.x = element_blank(), 
@@ -385,9 +382,6 @@ cbind(poll_prediction_data, preds.emp.summ) %>%
         text = element_text(size = 12))
 
 ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
-
-trade_model_2 <- lm(log10(total_views) ~ used * class_name * language, data = all_trade_data)
-summary(trade_model_2)
 
 
 
