@@ -242,10 +242,11 @@ summary(trade_model)
 anova(trade_model)
 
 trade_model_1 <- lmerTest::lmer(log10(total_views) ~ used + (1|language), data = all_trade_data)
-trade_model_2 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
+trade_model_2 <- lmerTest::lmer(log10(total_views) ~ class_name + (1|language), data = all_trade_data)
+trade_model_3 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
 
 # check AIC values
-AIC(trade_model, trade_model_1, trade_model_2)
+AIC(trade_model, trade_model_1, trade_model_2, trade_model_3)
 
 # call in MASS here specifically for sampleing
 iterate_covar_sai <- function(i, model, prediction_data){
@@ -334,10 +335,11 @@ summary(pollinator_model)
 anova(pollinator_model)
 
 pollinator_model_1 <- lmerTest::lmer(log10(total_views) ~ pollinating + (1|language), data = all_poll_data)
-pollinator_model_2 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
+pollinator_model_2 <- lmerTest::lmer(log10(total_views) ~ class_name + (1|language), data = all_poll_data)
+pollinator_model_3 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
 
 # check AIC values
-AIC(pollinator_model, pollinator_model_1, pollinator_model_2)
+AIC(pollinator_model, pollinator_model_1, pollinator_model_2, pollinator_model_3)
 
 # call in MASS here specifically for sampleing
 iterate_covar_sai <- function(i, model, prediction_data){
