@@ -574,7 +574,7 @@ taxa_plot <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = pollinating), position = position_dodge(width = 0.5), width = 0.2) +
   geom_point(aes(x = taxonomic_class, y = Median, colour = pollinating), position = position_dodge(width = 0.5), size = 1.5) +
   scale_colour_manual("Pollinating", values = c("#000000", "#E69F00")) +
-  scale_y_continuous(breaks = c(0, 0.001, 0.002), labels = c("0", "0.001", "0.002")) +
+  scale_y_continuous(breaks = c(-0.002, -0.001, 0, 0.001, 0.002), labels = c("-0.002", "-0.001", "0", "0.001", "0.002")) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
@@ -588,8 +588,8 @@ poll_traded_model_2b <- lmerTest::lmer(av_lambda ~ used + (1|language), data = j
 poll_traded_model_2c <- lmerTest::lmer(av_lambda ~ taxonomic_class + (1|language), data = joined_pollinators_use)
 poll_traded_model_2d <- lmerTest::lmer(av_lambda ~ 1 + (1|language), data = joined_pollinators_use)
 
-summary(poll_traded_model_1)
-anova(poll_traded_model_2)
+summary(poll_traded_model_2a)
+anova(poll_traded_model_2a)
 
 AIC(poll_traded_model_2a, poll_traded_model_2b, poll_traded_model_2c)
 
@@ -599,7 +599,7 @@ prediction_data_inter_random <- joined_pollinators_use %>%
   unique() %>%
   slice(1:10)
 
-used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_2, prediction_data = prediction_data_inter_random)
+used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_2a, prediction_data = prediction_data_inter_random)
 
 # extract the median, upper interval, and lower interval for samples
 used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.emp, MARGIN = 1, FUN = median),
@@ -616,15 +616,15 @@ taxa_plot_use <- cbind(prediction_data_inter_random, used_random_preds.emp.summ)
   geom_errorbar(aes(x = taxonomic_class, ymin = Lower, ymax = Upper, colour = used), position = position_dodge(width = 0.5), width = 0.2) +
   geom_point(aes(x = taxonomic_class, y = Median, colour = used), position = position_dodge(width = 0.5), size = 1.5) +
   scale_y_continuous(breaks = c(0, 0.001, 0.002), labels = c("0", "0.001", "0.002")) +
-  scale_colour_manual("Traded/harvested", values = c("#000000", "#E69F00")) +
+  scale_colour_manual("Traded", values = c("#000000", "#E69F00")) +
   xlab(NULL) +
-  ylab(NULL) +
+  ylab("Average monthly change in SAI") +
   theme_bw() +
   theme(panel.grid = element_blank())
   
 taxa_plot + taxa_plot_use + plot_layout(ncol = 1)
 
-ggsave("use_pollinating.png", scale = 1.1, dpi = 350)
+ggsave("use_pollinating.png", scale = 1, dpi = 350)
 
 # plot broken down by three way interaction for trade, taxa, language
 joined_pollinators_use <- joined_pollinators %>%
