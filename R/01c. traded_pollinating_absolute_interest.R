@@ -199,7 +199,7 @@ for(i in 1:length(box_classes)){
     ggplot() +
     geom_boxplot(aes(x = class_name, log10(total_views), fill = used), outlier.shape = NA, size = 0.2) +
     scale_y_continuous(limits = c(0, 7.1), breaks = c(0, 2, 4, 6), labels = c("1", "100", "10,000", "1,000,000")) +
-    scale_fill_manual("Traded or harvested", values = c("#0072B2", "#D55E00")) +
+    scale_fill_manual("Traded", values = c("#0072B2", "#D55E00")) +
     facet_wrap(~language) +
     xlab(NULL) +
     ylab(NULL) +
@@ -219,7 +219,7 @@ box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article vie
     plot_layout(ncol = 5)}
 
 # save plot of traded/non-traded species on Wikipedia
-ggsave("traded_species_wikipedia_boxplot.png", scale = 1.3, dpi = 350)
+ggsave("traded_species_wikipedia_boxplot.png", scale = 1.2, dpi = 350)
 
 # dataframe of article views for modelling
 trade_dataframe <- list()
