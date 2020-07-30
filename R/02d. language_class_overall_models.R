@@ -336,7 +336,8 @@ model_3_language<- lm(av_lambda ~ language, data = final_bound)
 model_int <- lm(av_lambda ~ 1, data = final_bound)
 
 # check AIC values
-AIC(model_3, model_3_taxa, model_3_language, model_int)
+data.frame(AIC(model_3, model_3_taxa, model_3_language, model_int)) %>%
+  mutate(D_AIC = AIC - -950543.4)
 
 summary(model_3)
 anova(model_3)
@@ -545,10 +546,11 @@ poll_traded_model_1d <- lmerTest::lmer(av_lambda ~ 1 + (1|language), data = join
 summary(poll_traded_model_1a)
 anova(poll_traded_model_1a)
 
-AIC(poll_traded_model_1a, 
+data.frame(AIC(poll_traded_model_1a, 
     poll_traded_model_1b, 
     poll_traded_model_1c,
-    poll_traded_model_1d)
+    poll_traded_model_1d)) %>%
+  mutate(D_AIC = -583810.4 - AIC)
 
 prediction_data_inter_random <- joined_pollinators_poll %>%
   dplyr::select(taxonomic_class, pollinating, av_lambda) %>%
@@ -591,7 +593,7 @@ poll_traded_model_2d <- lmerTest::lmer(av_lambda ~ 1 + (1|language), data = join
 summary(poll_traded_model_2a)
 anova(poll_traded_model_2a)
 
-AIC(poll_traded_model_2a, poll_traded_model_2b, poll_traded_model_2c)
+diff(data.frame(AIC(poll_traded_model_2a, poll_traded_model_2b))$AIC)
 
 prediction_data_inter_random <- joined_pollinators_use %>%
   dplyr::select(taxonomic_class, used, av_lambda) %>%

@@ -246,7 +246,8 @@ trade_model_2 <- lmerTest::lmer(log10(total_views) ~ class_name + (1|language), 
 trade_model_3 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_trade_data)
 
 # check AIC values
-AIC(trade_model, trade_model_1, trade_model_2, trade_model_3)
+data.frame(AIC(trade_model, trade_model_1, trade_model_2, trade_model_3)) %>%
+  mutate(D_AIC = AIC - 254981.1)
 
 # call in MASS here specifically for sampleing
 iterate_covar_sai <- function(i, model, prediction_data){
@@ -339,7 +340,8 @@ pollinator_model_2 <- lmerTest::lmer(log10(total_views) ~ class_name + (1|langua
 pollinator_model_3 <- lmerTest::lmer(log10(total_views) ~ 1 + (1|language), data = all_poll_data)
 
 # check AIC values
-AIC(pollinator_model, pollinator_model_1, pollinator_model_2, pollinator_model_3)
+data.frame(AIC(pollinator_model, pollinator_model_1, pollinator_model_2, pollinator_model_3)) %>%
+  mutate(D_AIC = AIC - 183919.7)
 
 # call in MASS here specifically for sampleing
 iterate_covar_sai <- function(i, model, prediction_data){
