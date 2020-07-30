@@ -114,6 +114,8 @@ class_views_plot <- rbindlist(class_views) %>%
   unique() %>%
   group_by(class) %>%
   tally() %>%
+  mutate(class = factor(class, levels = c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia"),
+                        labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   mutate(class = fct_reorder(class, -n)) %>%
   ggplot() +
     geom_bar(aes(x = class, y = n), stat = "identity") +
@@ -158,7 +160,7 @@ plot_views <- group_views(total_monthly_views, languages = languages_full) %>%
 # combine the plots for the total species for all class/languages and views for all languages
 plot_views + class_views_plot + plot_layout(ncol = 1)
 
-ggsave("all_language_views-species.png", scale = 1.2, dpi = 350)
+ggsave("all_language_views-species_2.png", scale = 1.1, dpi = 350)
 
 ## plot for complete time series
 # count number of months of views per article
