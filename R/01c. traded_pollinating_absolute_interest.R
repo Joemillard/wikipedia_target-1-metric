@@ -282,7 +282,7 @@ cbind(trade_prediction_data, preds.emp.summ) %>%
     geom_errorbar(aes(x = class_name, ymin = Lower, ymax = Upper, colour = used), width = 0.2, position = position_dodge(width = 0.5)) +
     geom_point(aes(x = class_name, y = Median, colour = used), position=position_dodge(width = 0.5)) + 
     scale_y_continuous("Total article views", breaks = c(2.39794, 2.69897, 3, 3.30103, 3.60206, 3.90309, 4.20412), labels = c(250, 500, 10^3, 2000, 4000, 8000, 16000)) +
-    scale_colour_manual("Traded or harvested", values = c("#000000", "red"), labels = c("Yes", "No")) +
+    scale_colour_manual("Traded", values = c("#000000", "red"), labels = c("Yes", "No")) +
     coord_cartesian(ylim = c(2.1, 4.4), xlim = c(1.1, 4.9)) +
     geom_bar(aes(y = 4, x = "Mammals"), stat = "identity", alpha = 0, width = 1) +
     geom_bar(aes(y = 4, x = "Birds"), stat = "identity", alpha = 0.025, width = 1) +
@@ -293,9 +293,9 @@ cbind(trade_prediction_data, preds.emp.summ) %>%
     theme(panel.grid = element_blank(), 
           axis.title.x = element_blank(), 
           axis.text.x = element_text(angle = 45, hjust = 1), 
-          text = element_text(size = 12))
+          text = element_text(size = 14))
 
-ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
+ggsave("trade_predicted_values.png", scale = 1, dpi = 350)
 
 ### pollinator dataframe of article views for modelling
 # function for calculating average views for each class for a given language
