@@ -533,20 +533,29 @@ joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 # remove the extra pollination columns
 joined_pollinators_poll <- joined_pollinators %>%
   select(-confidence, -fact_conf, -comb_conf, -class_name, -ns) %>%
-  filter(site != "frwiki") %>%
+  #filter(site != "frwiki") %>%
   filter(!taxonomic_class %in% c ("actinopterygii", "amphibia"))
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded, with language random effect
-poll_traded_model_1 <- lmerTest::lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
-summary(poll_traded_model_1)
-anova(poll_traded_model_1)
+poll_traded_model_1a <- lmerTest::lmer(av_lambda ~ pollinating * taxonomic_class + (1|language), data = joined_pollinators_poll)
+poll_traded_model_1b <- lmerTest::lmer(av_lambda ~ pollinating + (1|language), data = joined_pollinators_poll)
+poll_traded_model_1c <- lmerTest::lmer(av_lambda ~ taxonomic_class + (1|language), data = joined_pollinators_poll)
+poll_traded_model_1d <- lmerTest::lmer(av_lambda ~ 1 + (1|language), data = joined_pollinators_poll)
+
+summary(poll_traded_model_1a)
+anova(poll_traded_model_1a)
+
+AIC(poll_traded_model_1a, 
+    poll_traded_model_1b, 
+    poll_traded_model_1c,
+    poll_traded_model_1d)
 
 prediction_data_inter_random <- joined_pollinators_poll %>%
   dplyr::select(taxonomic_class, pollinating, av_lambda) %>%
   mutate(av_lambda = 0) %>%
   unique()
 
-used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_1, prediction_data = prediction_data_inter_random)
+used_random_preds.emp <- sapply(X = 1:1000, iterate_covar_sai, poll_traded_model_1a, prediction_data = prediction_data_inter_random)
 
 # extract the median, upper interval, and lower interval for samples
 used_random_preds.emp.summ <- data.frame(Median = apply(X = used_random_preds.emp, MARGIN = 1, FUN = median),
@@ -571,12 +580,18 @@ taxa_plot <- cbind(prediction_data_inter_random, used_random_preds.emp.summ) %>%
 
 ### models predicting rate of change against pollinating/non-pollinating and traded/non-traded
 joined_pollinators_use <- joined_pollinators %>%
-  filter(site != "frwiki") %>%
+  #filter(site != "frwiki") %>%
   filter(taxonomic_class != "insecta")
 
-poll_traded_model_2 <- lmerTest::lmer(av_lambda ~ used * taxonomic_class + (1|language), data = joined_pollinators_use)
+poll_traded_model_2a <- lmerTest::lmer(av_lambda ~ used * taxonomic_class + (1|language), data = joined_pollinators_use)
+poll_traded_model_2b <- lmerTest::lmer(av_lambda ~ used + (1|language), data = joined_pollinators_use)
+poll_traded_model_2c <- lmerTest::lmer(av_lambda ~ taxonomic_class + (1|language), data = joined_pollinators_use)
+poll_traded_model_2d <- lmerTest::lmer(av_lambda ~ 1 + (1|language), data = joined_pollinators_use)
+
 summary(poll_traded_model_1)
 anova(poll_traded_model_2)
+
+AIC(poll_traded_model_2a, poll_traded_model_2b, poll_traded_model_2c)
 
 prediction_data_inter_random <- joined_pollinators_use %>%
   dplyr::select(taxonomic_class, used, av_lambda) %>%
