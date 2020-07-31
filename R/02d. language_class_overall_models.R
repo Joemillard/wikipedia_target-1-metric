@@ -531,6 +531,12 @@ joined_pollinators <- left_join(traded_rates, pollinat, by = c("genus_name" = "g
 joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
 
+# save as RDS for robin
+joined_pollinators_save <- joined_pollinators %>%
+  select(-confidence, -fact_conf, -comb_conf, -ns, -Freq, -SpeciesSSet, -V1)
+
+saveRDS(joined_pollinators_save, "lambda_submission_2.rds")
+
 # remove the extra pollination columns
 joined_pollinators_poll <- joined_pollinators %>%
   select(-confidence, -fact_conf, -comb_conf, -class_name, -ns) %>%
