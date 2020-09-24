@@ -79,7 +79,7 @@ unique_spec_lang <- inner_join(bound_unique_spec, bound_all_spec,  by = "q_wikid
     theme(panel.grid = element_blank())
   
 # save the plot for unique species in each language, and the list of unique species with wiki_id
-ggsave("unique_species_language.png", scale = 0.9, dpi = 350)
+ggsave("unique_species_language_class.png", scale = 1, dpi = 350)
 write.csv(bound_unique_spec, "one_language_species.csv")
 
 
