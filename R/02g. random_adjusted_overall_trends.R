@@ -14,6 +14,9 @@ source("R/00. functions.R")
 # read in the random rds file
 directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
 
+# read in the species unique to each language
+unique_species <- read.csv(here::here("data/class_wiki_indices/submission_2/one_language_species.csv"))
+
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
 view_directories <- function(classes, directory, languages){
@@ -26,8 +29,7 @@ view_directories <- function(classes, directory, languages){
   
   # unlist the files in the correct order
   file_order <- unlist(view_files)
-  #print(file_order)
-  
+
   # set up empty list for files for each language
   user_files_dir <- list()
   user_files <- list()
@@ -110,6 +112,13 @@ wiki_average_weight <- function(data_file){
   return(data_fin)
 }
 
+jamGeomean <- function(x, na.rm = TRUE, ...){
+  ## Purpose is to calculate geometric mean while allowing for
+  ## positive and negative values
+  x2 <- mean(log2(1 + abs(x)) * sign(x));
+  sign(x2) * (2 ^ abs(x2) - 1);
+}
+
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   
@@ -138,6 +147,49 @@ run_each_group <- function(lambda_files, random_trend){
   return(boot_res)
 }
 
+# rerun the above overall index with a weighted proportion for users
+# first calculate the weighted proportions and add to dataframe
+# interent users from https://www.internetworldstats.com/stats7.htm
+# and from https://www.statista.com/statistics/828259/predicted-internet-user-penetration-rate-in-italy/ and https://www.istat.it/ for italy
+# italy = 60.24 million * 0.7193 (2020 internet penetration)
+
+# internet users by each langauge, equivalent to 73.5 of total users
+internet_users <- data.frame("Language" = c("\\^en_",
+                                            "\\^zh_",
+                                            "\\^es_",
+                                            "\\^ar_",
+                                            "\\^pt_",
+                                            "\\^fr_",
+                                            "\\^ja_",
+                                            "\\^ru_",
+                                            "\\^de_",
+                                            "\\^it_"),
+                             "Users" = c(1186451052,
+                                         888453068,
+                                         363684593,
+                                         237418349,
+                                         171750818,
+                                         151733611,
+                                         118626672,
+                                         116353942,
+                                         92525427,
+                                         43330632))
+
+# total internet users
+total_users <- 4585578718
+
+# proportion of total users for our 10 languages - include in manuscript
+sum(internet_users$Users)/total_users # 73.5%
+
+# convert the number of users to proportion
+internet_users$users_total_10 <- sum(internet_users$Users)
+internet_users$prop <- internet_users$Users/internet_users$users_total_10
+
+# remove extra columsn with exception of proportion
+internet_users <- internet_users %>%
+  select(Language, prop)
+
+# set up language and class vectors
 languages_orig <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 lpi_trends_adjusted <- list()
@@ -238,6 +290,9 @@ for(l in 1:length(languages_orig)){
         mutate(taxa = classes[i]) %>%
         mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
       print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
+      merge_lambda[[j]] <- merge_lambda[[j]] %>%
+        filter(!q_wikidata %in% unique_species$q_wikidata)
+      
     }
     merge_fin_lambda[[i]] <- merge_lambda
   }
@@ -250,7 +305,8 @@ for(l in 1:length(languages_orig)){
 
   # merge all the lambda files, and calc average across each q_wikidata
   merge_species <- rbindlist(merge_species) %>% 
-    wiki_average()
+    inner_join(internet_users, by = c("language" = "Language")) %>%
+    wiki_average_weight()
 
   # reshape lambda files back into year rows, and then split into separate taxonomic classes
   all_lambdas <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
@@ -278,13 +334,13 @@ jack_knifed_class <- rbindlist(bound_trends) %>%
   scale_fill_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_colour_manual("Excluded language", values = c("black", "#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999")) +
   scale_y_continuous(breaks = c(1.05, 1, 0.95, 0.9, 0.85, 0.8), labels = c("1.05","1", "0.95", "0.9", "0.85", "0.8")) +
-  ylab("Species Awareness Index (SAI)") +
+  ylab("User-weighted Species Awareness Index (SAI)") +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
 # save the jack-knifed plot for supp material
-ggsave("overall_index_jack_1000_95.png", scale = 0.9, dpi = 350)
+ggsave("overall_index_jack_1000_95_equal-weight_no-unique-spec.png", scale = 0.9, dpi = 350)
 
 ## after jack-knifing, remove the language/languages that have a big influence on the overall index
 
@@ -381,6 +437,8 @@ for(i in 1:length(smoothed_adjusted_lamda)){
       mutate(taxa = classes[i]) %>%
       mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
     print(nrow(smoothed_adjusted_lamda[[i]][[j]]) - nrow(merge_lambda[[j]]))
+    merge_lambda[[j]] <- merge_lambda[[j]] %>%
+      filter(!q_wikidata %in% unique_species$q_wikidata)
   }
   merge_fin_lambda[[i]] <- merge_lambda
 }
@@ -431,58 +489,112 @@ all_class_no_french <- rbindlist(language_frame) %>%
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  ylab("Species Awareness Index (SAI)") +
+  ylab("Unweighted Species Awareness Index (SAI)") +
   scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
         axis.text = element_text(size = 11),
         axis.title.y = element_text(size = 12, vjust = 2))
 
-# rerun the above overall index with a weighted proportion for users
-# first calculate the weighted proportions and add to dataframe
-# interent users from https://www.internetworldstats.com/stats7.htm
-# and from https://www.statista.com/statistics/828259/predicted-internet-user-penetration-rate-in-italy/ and https://www.istat.it/ for italy
-# italy = 60.24 million * 0.7193 (2020 internet penetration)
+# read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
+languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
-# internet users by each langauge, equivalent to 73.5 of total users
-internet_users <- data.frame("Language" = c("\\^en_",
-                                            "\\^zh_",
-                                            "\\^es_",
-                                            "\\^ar_",
-                                            "\\^pt_",
-                                            "\\^fr_",
-                                            "\\^ja_",
-                                            "\\^ru_",
-                                            "\\^de_",
-                                            "\\^it_"),
-                             "Users" = c(1186451052,
-                                         888453068,
-                                         363684593,
-                                         237418349,
-                                         171750818,
-                                         151733611,
-                                         118626672,
-                                         116353942,
-                                         92525427,
-                                         43330632))
+# read in daily average to retrieve q_wikidata id
+average_monthly_views_weight <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
 
-# total internet users
-total_users <- 4585578718
+iucn_views_poll_weight <- list()
+for(i in 1:length(average_monthly_views_weight)){
+  iucn_views_poll_weight[[i]] <- lapply(average_monthly_views_weight[[i]], rescale_iucn)
+  iucn_views_poll_weight[[i]] <- lapply(iucn_views_poll_weight[[i]], select_comp) # select time series length
+  iucn_views_poll_weight[[i]] <- lapply(iucn_views_poll_weight[[i]], function(x){
+    data_fin <- x %>%
+      select(article, q_wikidata, dec_date, av_views) %>%
+      mutate(SpeciesSSet = as.character(as.numeric(as.factor(article)))) %>%
+      filter(complete.cases(.)) %>%
+      select(q_wikidata, SpeciesSSet, article) %>%
+      unique() %>%
+      mutate(SpeciesSSet = as.character(SpeciesSSet))
+    return(data_fin)
+  })
+}
 
-# proportion of total users for our 10 languages - include in manuscript
-sum(internet_users$Users)/total_users # 73.5%
+# read in the lambda files 
+random_trend_weight <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
-# convert the number of users to proportion
-internet_users$users_total_10 <- sum(internet_users$Users)
-internet_users$prop <- internet_users$Users/internet_users$users_total_10
+# adjust each of the lambda values for random
+# adjust the year column
+for(i in 1:length(random_trend_weight)){
+  random_trend_weight[[i]]$date <- as.numeric(rownames(random_trend_weight[[i]]))
+  random_trend_weight[[i]]$Year <- (random_trend_weight[[i]]$date - 1970)/12 + 2015
+  random_trend_weight[[i]]$Year <- as.character(random_trend_weight[[i]]$Year)
+  
+  # calculate lambda for random
+  random_trend_weight[[i]] <- random_trend_weight[[i]] %>%
+    filter(date %in% c(1977:2033))
+  random_trend_weight[[i]]$lamda = c(0, diff(log10(random_trend_weight[[i]]$LPI_final[1:57])))
+  random_trend_weight[[i]]$date <- paste("X", random_trend_weight[[i]]$date, sep = "")
+  random_trend_weight[[i]]$language <- languages[i]
+}
 
-# remove extra columsn with exception of proportion
-internet_users <- internet_users %>%
-  select(Language, prop)
+# run the function with 10 languages, specifying the directory
+user_files_weight <- view_directories(classes,
+                               directory,
+                               languages)
+
+# read in all the files in groups for each language
+language_views_weight <- list()
+system.time(for(i in 1:length(user_files_weight)){
+  language_views_weight[[i]] <- lapply(user_files_weight[[i]], fread, encoding = "UTF-8", stringsAsFactors = FALSE)
+})
+
+# adjust the lambdas for each species for each language with random, and conert speciesset to character for merging
+adj_lambdas_weight <- list()
+all_lambdas_weight <- list()
+data_file <- list()
+for(i in 1:length(language_views_weight)){
+  for(j in 1:length(random_trend_weight)){
+    data_file <- language_views_weight[[i]][[j]] %>%
+      mutate(SpeciesSSet = as.character(SpeciesSSet))
+    adj_lambdas_weight[[j]] <- cbind(data_file[, 1:3], sweep(data_file[, 4:ncol(data_file)], 2, random_trend_weight[[j]]$lamda, FUN = "-"))
+  }
+  all_lambdas_weight[[i]] <- adj_lambdas_weight
+}
+
+#### additional smoothing of the random adjusted indices
+# run the smoothing of lamdas over each class/language combination
+smoothed_adjusted_lamda_weight <- list()
+for(i in 1:length(all_lambdas_weight)){
+  smoothed_adjusted_lamda_weight[[i]] <- lapply(all_lambdas_weight[[i]], smooth_all_groups)
+  print(i)
+}
+####
+
+# merge each lambda file with the speciesSSet ID from view data
+merge_lambda_weight <- list()
+merge_fin_lambda_weight <- list()
+for(i in 1:length(smoothed_adjusted_lamda_weight)){
+  for(j in 1:length(smoothed_adjusted_lamda_weight[[i]])){
+    merge_lambda_weight[[j]] <- inner_join(smoothed_adjusted_lamda_weight[[i]][[j]], iucn_views_poll_weight[[j]][[i]], by = "SpeciesSSet") %>%
+      mutate(taxa = classes[i]) %>%
+      mutate(language = languages[j]) # merge each set of lambda files with the q_wikidata and add columns for class and language
+    print(nrow(smoothed_adjusted_lamda_weight[[i]][[j]]) - nrow(merge_lambda_weight[[j]]))
+    merge_lambda_weight[[j]] <- merge_lambda_weight[[j]] %>%
+      filter(!q_wikidata %in% unique_species$q_wikidata)
+  }
+  merge_fin_lambda_weight[[i]] <- merge_lambda_weight
+}
+
+# rbindlist all lambda together and calculate averge for each species across languages
+merge_species_weight <- list()
+for(i in 1:length(merge_fin_lambda_weight)){
+  merge_species_weight[[i]] <- rbindlist(merge_fin_lambda_weight[[i]])
+}
 
 # merge all the lambda files, and calc average across each q_wikidata
-merge_species_bound_weight <- rbindlist(merge_species) %>% 
+merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
   inner_join(internet_users, by = c("language" = "Language")) %>%
   wiki_average_weight()
 
@@ -490,7 +602,7 @@ merge_species_bound_weight <- rbindlist(merge_species) %>%
 all_lambdas_weight <- reshape2::dcast(merge_species_bound_weight, q_wikidata + taxa ~ variable)
 
 # run the boostrapping of trends for all lambda
-lpi_trends_adjusted_weight <- run_each_group(all_lambdas_weight, random_trend = random_trend[[1]])
+lpi_trends_adjusted_weight <- run_each_group(all_lambdas_weight, random_trend = random_trend_weight[[1]])
 
 # calculate average lambda, starting at each month, and assign factor for whether average is increasing or decreasing
 language_frame_weight <- list()
@@ -505,13 +617,14 @@ for(i in 1:56){
     mutate(series_start = i)
 }
 
+# build the plot for the user weighted average
 all_class_weighted <- rbindlist(language_frame_weight) %>%
   select(series_start, average_lambda, factor_rate) %>%
   unique() %>% 
   bind_rows(data.frame("average_lambda" = NA,
                        "factor_rate" = NA,
                        "series_start" = 57)) %>%
-  mutate(Year = random_trend[[1]]$Year) %>%
+  mutate(Year = random_trend_weight[[1]]$Year) %>%
   mutate(LPI = lpi_trends_adjusted_weight$LPI) %>%
   mutate(LPI_upr = lpi_trends_adjusted_weight$LPI_upr) %>%
   mutate(LPI_lwr = lpi_trends_adjusted_weight$LPI_lwr) %>%
@@ -521,21 +634,19 @@ all_class_weighted <- rbindlist(language_frame_weight) %>%
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
   geom_line(aes(x = Year, y = LPI)) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
-  ylab("Species Awareness Index (SAI)") +
-  scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
+  ylab("User-weighted Species Awareness Index (SAI)") +
+  scale_y_continuous(breaks = c(1, 0.96, 0.92, 0.88), labels = c("1", "0.96","0.92", "0.88")) +
   xlab(NULL) +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text = element_text(size = 11),
         axis.title.y = element_text(size = 12, vjust = 2))
 
-
-
+# combine plots for the french excluded and user weighted trends
+all_class_no_french + all_class_weighted + plot_layout(ncol = 1)
 
 # save the overall trend for the main text
-ggsave("overall_index_1000_95.png", scale = 0.8, dpi = 350)
-
-ggsave("average-daily_random_adjusted_overall_SAI_1000_95_no-weighting_random-no-species_smoothed_no-french_jack.png", scale = 1, dpi = 350)
+ggsave("overall_index_1000_95_no-french_weighted.png", scale = 1.4, dpi = 350)
 
 # plot of basic trends for use in discussion figure, with rescaling
 all_class_no_french_diagram <- rbindlist(language_frame) %>%
