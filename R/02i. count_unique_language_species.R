@@ -16,11 +16,19 @@ average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languag
 
 # extract names of the average view list and assign to a vector
 languages <- names(average_monthly_views)
+classes <- names(average_monthly_views[[1]])
+
+# assign column for taxonomic classes
+for(i in 1:length(average_monthly_views)){
+  for(j in 1:length(average_monthly_views[[i]])){
+    average_monthly_views[[i]][[j]]$taxa_class <- classes[[j]]
+  }
+}
 
 # select unique species for each language
 sel_unique_wiki <- function(data_file){
   data_fin <- data_file %>%
-    select(q_wikidata) %>%
+    select(q_wikidata, taxa_class) %>%
     unique()
   
   return(data_fin)
@@ -45,22 +53,28 @@ bound_all_spec <- rbindlist(all_species)
 bound_unique_spec <- bound_all_spec %>%
   group_by(q_wikidata) %>%
   tally() %>%
-  filter(n >= 1)
+  filter(n == 1)
 
 # join the unique species onto all species by wikidata to retrieve the language and sum unique
 unique_spec_lang <- inner_join(bound_unique_spec, bound_all_spec,  by = "q_wikidata") %>%
-  group_by(language) %>%
+  group_by(language, taxa_class) %>%
   summarise(total_unique = sum(n)) %>%
+  ungroup() %>%
+  group_by(language) %>%
+  mutate(total_lang = sum(total_unique)) %>%
   ungroup() %>%
   arrange(desc(total_unique)) %>%
   print() %>%
   mutate(language = factor(language, labels = c("Arabic", "German", "English", "Spanish", "French", "Italian", "Japanese", "Portuguese", "Russian", "Chinese"))) %>%
-  mutate(language = fct_reorder(language, -total_unique)) %>%
+  mutate(taxa_class = factor(taxa_class, levels = c("reptilia", "actinopterygii", "mammalia", "aves", "insecta", "amphibia"),
+                       labels = c("Reptiles", "Ray finned fishes", "Mammals", "Birds", "Insects", "Amphibians"))) %>%
+  mutate(language = fct_reorder(language, -total_lang)) %>%
   ggplot() +
-    geom_bar(aes(x = language, y = total_unique), stat = "identity") +
+    geom_bar(aes(x = language, y = total_unique, fill = taxa_class), stat = "identity") +
     ylab("Unique species") +
     xlab("") +
-    #scale_y_continuous(limits = c(0, 2100), expand = c(0, 0)) +
+    scale_y_continuous(limits = c(0, 2100), expand = c(0, 0)) +
+    scale_fill_manual("Taxonomic class", values = c("black", "#FF7F00", "#377EB8", "#4DAF4A", "#F781BF", "#A65628")) +
     theme_bw() +
     theme(panel.grid = element_blank())
   
