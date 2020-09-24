@@ -340,7 +340,7 @@ jack_knifed_class <- rbindlist(bound_trends) %>%
   theme(panel.grid = element_blank())
 
 # save the jack-knifed plot for supp material
-ggsave("overall_index_jack_1000_95_equal-weight_no-unique-spec.png", scale = 0.9, dpi = 350)
+ggsave("overall_index_jack_1000_95_user-weight_no-unique-spec.png", scale = 0.9, dpi = 350)
 
 ## after jack-knifing, remove the language/languages that have a big influence on the overall index
 
