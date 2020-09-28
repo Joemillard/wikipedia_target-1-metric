@@ -55,6 +55,14 @@ bound_unique_spec <- bound_all_spec %>%
   tally() %>%
   filter(n == 1)
 
+# the number of times each species occurs in each language
+bound_all_spec <- bound_all_spec %>%
+  group_by(q_wikidata) %>%
+  tally()
+
+# save a csv for the number of times each species occurs in each language
+write.csv(bound_all_spec, "species_number_per_language.csv")
+
 # join the unique species onto all species by wikidata to retrieve the language and sum unique
 unique_spec_lang <- inner_join(bound_unique_spec, bound_all_spec,  by = "q_wikidata") %>%
   group_by(language, taxa_class) %>%
