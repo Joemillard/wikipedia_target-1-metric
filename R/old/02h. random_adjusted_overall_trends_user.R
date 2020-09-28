@@ -342,7 +342,7 @@ jack_knifed_class <- rbindlist(bound_trends) %>%
 # save the jack-knifed plot for supp material
 ggsave("overall_index_jack_1000_95_user-weight_no-unique-spec.png", scale = 0.9, dpi = 350)
 
-# read in the string of languages and taxa - original order sorted alphabetically for files read in - exclude french wikipedia
+# read in the string of languages and taxa - original order sorted alphabetically for files read in - keep french language for user weighting
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
@@ -487,7 +487,7 @@ all_class_weighted <- rbindlist(language_frame_weight) %>%
         axis.title.y = element_text(size = 12, vjust = 2))
 
 # save the overall trend for the main text
-ggsave("overall_index_1000_95_no-french_weighted.png", scale = 1.4, dpi = 350)
+ggsave("overall_index_1000_95_user-weight_no-unique.png", scale = 0.8, dpi = 350)
 
 # plot of basic trends for use in discussion figure, with rescaling
 all_class_no_french_diagram <- rbindlist(language_frame) %>%
