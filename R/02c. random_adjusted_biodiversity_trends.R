@@ -153,6 +153,12 @@ for(i in 1:length(all_lambdas)){
 
 ###
 
+# reassign correct names for each element in list
+names(smoothed_adjusted_lamda) <- (c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random_data"))
+for(i in 1:length(smoothed_adjusted_lamda)){
+  names(smoothed_adjusted_lamda[[i]]) <- c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en")
+}
+
 # Function to calculate index from lambdas selected by 'ind'
 create_lpi <- function(lambdas, ind = 1:nrow(lambdas)) {
   
@@ -181,7 +187,7 @@ run_each_group <- function(lambda_files, random_trend){
   return(boot_res)
 }
 
-# run the boostrapping of trends for each lambda, and adjust for the random of that language
+# run the boostrapping of trends for each lambda
 lpi_trends_adjusted <- list()
 bound_trends <- list()
 for(i in 1:length(smoothed_adjusted_lamda)){
