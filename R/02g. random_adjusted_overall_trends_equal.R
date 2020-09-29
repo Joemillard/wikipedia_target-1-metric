@@ -472,7 +472,7 @@ all_class_no_french_diagram <- rbindlist(language_frame) %>%
   geom_line(aes(x = Year, y = LPI), size = 3) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   ylab(NULL) +
-  scale_y_continuous(breaks = c(1), labels = c("0")) +
+  scale_y_continuous(breaks = c(1), labels = c("1")) +
   xlab("") +
   theme_bw() +
   theme(panel.grid = element_blank(),
@@ -512,4 +512,4 @@ diagram_rescale <- all_class_no_french_diagram_rescale %>%
 all_class_no_french_diagram + diagram_rescale + plot_layout(ncol = 1)
 
 # save the combined diagram plot
-ggsave("rescale_diagram.png", scale = 1, dpi = 350)
+ggsave("rescale_diagram_2.png", scale = 1, dpi = 350)
