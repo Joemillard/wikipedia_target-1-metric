@@ -443,7 +443,6 @@ bound_weighted_trends %>%
   
     facet_wrap(~sample_weight, scales = "free_y") +
     ylab("Species Awareness Index (SAI)") +
-    #scale_y_continuous(breaks = c(1, 0.96, 0.92, 0.88), labels = c("1", "0.96","0.92", "0.88")) +
     xlab(NULL) +
     theme_bw() +
     theme(panel.grid = element_blank(),
