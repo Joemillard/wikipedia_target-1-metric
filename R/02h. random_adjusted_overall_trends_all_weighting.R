@@ -299,6 +299,7 @@ for(i in 1:length(all_lambdas_weight)){
 
 # function for the way in way the smoothed lambdas should be weighted
 # merge each lambda file with the speciesSSet ID from view data
+# print tibble at each merge to check haven't added rows
 weight_index <- function(smoothed_adjusted_lamda_weight, sample_weight, us_wi_weight){
 
   merge_lambda_weight <- list()
@@ -325,8 +326,8 @@ weight_index <- function(smoothed_adjusted_lamda_weight, sample_weight, us_wi_we
   if(sample_weight == TRUE){
     if(us_wi_weight == "none"){
     merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
-      wiki_average() %>%
-      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>%
+      wiki_average() %>% print() %>%
+      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>% print() %>%
       mutate(adj_mean_val = mean_val * spec_weight) %>% 
       select(q_wikidata, variable, taxa, adj_mean_val)
     }
@@ -335,8 +336,8 @@ weight_index <- function(smoothed_adjusted_lamda_weight, sample_weight, us_wi_we
     if(us_wi_weight == "user"){
     merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
       left_join(internet_users, by = c("language" = "Language")) %>%
-      wiki_average_weight() %>%
-      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>%
+      wiki_average_weight() %>% print() %>%
+      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>% print() %>%
       mutate(adj_mean_val = mean_val * spec_weight) %>% 
       select(q_wikidata, variable, taxa, adj_mean_val)
     }
@@ -345,14 +346,15 @@ weight_index <- function(smoothed_adjusted_lamda_weight, sample_weight, us_wi_we
     if(us_wi_weight == "wiki"){
     merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
       left_join(wiki_users, by = c("language" = "Language")) %>%
-      wiki_average_weight() %>%
-      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>%
+      wiki_average_weight() %>% print() %>%
+      left_join(unique_species, by = c("q_wikidata" = "q_wikidata")) %>% print() %>%
       mutate(adj_mean_val = mean_val * spec_weight) %>% 
       select(q_wikidata, variable, taxa, adj_mean_val)
     }
     
     # after adjusting sample weights, reassign any value of month 1977 back as 1
     merge_species_bound_weight$adj_mean_val[merge_species_bound_weight$variable == "1977"] <- 1
+    
   }
   
     ## un-weighted by sample for each of none, user, and wiki
@@ -366,16 +368,17 @@ weight_index <- function(smoothed_adjusted_lamda_weight, sample_weight, us_wi_we
     # user and un-weighted sample
     if(us_wi_weight == "user"){
       merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
-        left_join(internet_users, by = c("language" = "Language")) %>%
-        wiki_average_weight()
+        left_join(internet_users, by = c("language" = "Language")) %>% print() %>%
+        wiki_average_weight() %>% print()
     }
     
     # wiki and un-weighted sample
     if(us_wi_weight == "wiki"){
     merge_species_bound_weight <- rbindlist(merge_species_weight) %>% 
-      left_join(wiki_users, by = c("language" = "Language")) %>%
-      wiki_average_weight()
+      left_join(wiki_users, by = c("language" = "Language")) %>% print() %>%
+      wiki_average_weight() %>% print()
     }
+    
   }
 
   # reshape lambda files back into year rows, and then split into separate taxonomic classes
