@@ -447,9 +447,10 @@ all_class_no_french <- rbindlist(language_frame) %>%
   mutate(all_average = mean(average_lambda, na.rm = TRUE)) %>%
   ggplot() +
   geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3, fill = "white", colour = "black", linetype = "dashed") +
-  geom_point(aes(x = Year, y = LPI, colour = average_lambda), size = 2.5) +
+  geom_point(aes(x = Year, y = LPI, colour = average_lambda), size = 2) +
   geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
   ylab("Species Awareness Index (SAI)") +
+  xlab("") +
   scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
   scale_colour_gradient2("Baseline month \n(average rate of change)",
                          breaks = c(-0.004, -0.003, -0.002, -0.001, -0.0005707436 - 0.0002911324, -0.0005707436, -0.0005707436 + 0.0002911324, 0, 1.651332e-04),
@@ -461,9 +462,11 @@ all_class_no_french <- rbindlist(language_frame) %>%
                                   ticks.colour = c(NA, NA, NA, NA, "white", "black", "white", NA, "red"),
                                   barheight = 15, barwidth = 3)) +
   theme(panel.grid = element_blank(),
-        axis.text.x = element_blank(),
         axis.text = element_text(size = 11),
         axis.title.y = element_text(size = 12, vjust = 2))
+
+# save the new plot for baseline change
+ggsave("baseline_change_overall_index.png", scale = 1, dpi = 350)
 
 # plot of basic trends for use in discussion figure, with rescaling
 all_class_no_french_diagram <- rbindlist(language_frame) %>%
