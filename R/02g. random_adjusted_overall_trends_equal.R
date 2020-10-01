@@ -430,7 +430,33 @@ for(i in 1:56){
     mutate(series_start = i)
 }
 
-# collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
+# main text plot -- collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
+all_class_no_french <- rbindlist(language_frame) %>%
+  select(series_start, average_lambda, factor_rate) %>%
+  unique() %>% 
+  bind_rows(data.frame("average_lambda" = NA,
+                       "factor_rate" = NA,
+                       "series_start" = 57)) %>%
+  mutate(Year = random_trend[[1]]$Year) %>%
+  mutate(LPI = lpi_trends_adjusted$LPI) %>%
+  mutate(LPI_upr = lpi_trends_adjusted$LPI_upr) %>%
+  mutate(LPI_lwr = lpi_trends_adjusted$LPI_lwr) %>%
+  mutate(Year = as.numeric(Year)) %>%
+  mutate(factor_rate = factor(factor_rate, levels = c("increasing/stable", "decreasing"), labels = c("Increasing or stable", "Decreasing"))) %>%
+  ggplot() +
+  geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3) +
+  geom_line(aes(x = Year, y = LPI)) +
+  geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
+  ylab("Unweighted Species Awareness Index (SAI)") +
+  scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
+  xlab(NULL) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text = element_text(size = 11),
+        axis.title.y = element_text(size = 12, vjust = 2))
+
+# supp info plot -- collapse together the average lambda at each start point for ecah class, add last row for value 57, and then stick LPI values back on
 all_class_no_french <- rbindlist(language_frame) %>%
   select(series_start, average_lambda, factor_rate) %>%
   unique() %>% 
@@ -465,34 +491,6 @@ all_class_no_french <- rbindlist(language_frame) %>%
     theme(panel.grid = element_blank(),
           axis.text = element_text(size = 11),
           axis.title.y = element_text(size = 12, vjust = 2))
-
-# sub-figure for all points and year
-sub_fig <- rbindlist(language_frame) %>%
-  select(series_start, average_lambda, factor_rate) %>%
-  unique() %>% 
-  bind_rows(data.frame("average_lambda" = NA,
-                       "factor_rate" = NA,
-                       "series_start" = 57)) %>%
-  mutate(Year = random_trend[[1]]$Year) %>%
-  mutate(Year = as.numeric(Year)) %>%
-  mutate(year_factors = factor(as.integer(Year), levels = c("2015", "2016", "2017", "2018", "2019", "2020"))) %>%
-  ggplot +
-    geom_vline(aes(xintercept = average_lambda, colour = year_factors)) +
-    coord_flip() +
-    xlab(NULL) +
-    scale_x_continuous(breaks = c(-0.004, -0.003, -0.002, -0.001, 0, 0.001), 
-                       labels = c("-0.004", "-0.003", "-0.002", "-0.001", "0", "0.001"),
-                      position = "top") +
-    scale_colour_viridis("Baseline year", discrete = TRUE, option = "plasma") +
-    theme_bw() +
-    guides(colour = guide_legend(nrow = 1, override.aes = list(size = 5))) +
-    theme(panel.grid = element_blank(),
-          legend.position = "bottom",
-          panel.background = element_rect(fill = "white"))
-  
-# combine the two plots
-all_class_no_french + sub_fig + plot_layout(ncol = 1, heights = c(2, 1))
-
 
 # save the new plot for baseline change
 ggsave("baseline_change_overall_index.png", scale = 1, dpi = 350)
