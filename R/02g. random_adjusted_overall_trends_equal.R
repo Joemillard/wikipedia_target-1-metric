@@ -472,21 +472,17 @@ all_class_no_french <- rbindlist(language_frame) %>%
   mutate(se = sd(average_lambda, na.rm = TRUE)/sqrt(56)) %>%
   mutate(confidence = 1.96 * se) %>%
   mutate(all_average = mean(average_lambda, na.rm = TRUE)) %>%
+  filter(!is.na(average_lambda)) %>%
   ggplot() +
     geom_ribbon(aes(x = Year, ymin = LPI_lwr, ymax = LPI_upr), alpha = 0.3, fill = "white", colour = "black", linetype = "dashed") +
-    geom_point(aes(x = Year, y = LPI, fill = average_lambda), size = 2.5, pch=21) +
+    geom_point(aes(x = Year, y = LPI, colour = average_lambda), size = 2.5) +
     geom_hline(yintercept = 1, linetype = "dashed", size = 1) +
     ylab("Species Awareness Index (SAI)") +
     xlab("") +
+    scale_colour_viridis("Baseline month \n(average rate of change)", option = "inferno", na.value = NA, direction = -1) +
     scale_y_continuous(breaks = c(1.08, 1.04, 1, 0.96), labels = c("1.08", "1.04","1", "0.96")) +
-    scale_fill_gradient2("Baseline month \n(average rate of change)",
-                           breaks = c(-0.004, -0.003, -0.002, -0.001, 0, 0.001),
-                           labels = c("-0.004", "-0.003", "-0.002", "-0.001", "0", "0.001"),
-                           low = 'blue', mid = 'white', high = 'red',
-                           midpoint = 0, guide = 'colourbar', na.value = NA) +
     theme_bw() +
-    guides(fill = guide_colourbar(ticks = TRUE, ticks.linewidth = 3,
-                                    ticks.colour = c(NA, NA, NA, NA, NA, NA),
+    guides(colour = guide_colourbar(ticks = FALSE,
                                     barheight = 8, barwidth = 2)) +
     theme(panel.grid = element_blank(),
           axis.text = element_text(size = 11),
