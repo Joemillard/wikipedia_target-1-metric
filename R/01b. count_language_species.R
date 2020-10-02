@@ -114,6 +114,7 @@ class_views_plot <- rbindlist(class_views) %>%
   unique() %>%
   group_by(class) %>%
   tally() %>%
+  ungroup() %>%
   mutate(class = factor(class, levels = c("Actinopterygii", "Amphibia", "Aves", "Insecta", "Mammalia", "Reptilia"),
                         labels = c("Ray finned fishes", "Amphibians", "Birds", "Insects", "Mammals", "Reptiles"))) %>%
   mutate(class = fct_reorder(class, -n)) %>%
