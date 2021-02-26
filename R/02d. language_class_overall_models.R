@@ -251,6 +251,12 @@ final_bound <- rbindlist(final_bound) %>%
 # read in smoothed rates of change - final_bound from above
 final_bound <- readRDS("data/class_wiki_indices/submission_2/mean_lambda_q_wikidata.rds")
 
+top_views <- box_classes[[10]] %>% arrange(desc(total_views)) %>% slice(1:8245)
+
+top_change <- final_bound %>% filter(language == "\\^en_") %>% filter(q_wikidata %in% top_views$q_wikidata)
+  
+  
+
 ## build model with language as random effect and sample from covariance matrix
 # remove french wikipedia for overall model
 no_final_bound_french <- final_bound %>%
