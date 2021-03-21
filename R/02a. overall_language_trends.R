@@ -15,14 +15,13 @@ languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the rds for total monthly views
-#total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
-total_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds") # daily average views
+average_daily_views <- readRDS("data/average_views/daily_average_views_10-languages.rds") # daily average views
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views
 iucn_views_poll <- list()
 for(i in 1:length(total_monthly_views)){
-  iucn_views_poll[[i]] <- lapply(total_monthly_views[[i]], rescale_iucn)
+  iucn_views_poll[[i]] <- lapply(average_daily_views[[i]], rescale_iucn)
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], select_comp) # select time series length
   iucn_views_poll[[i]] <- lapply(iucn_views_poll[[i]], structure_lpi_overall) # format for lpi
 }
