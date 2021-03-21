@@ -1,5 +1,4 @@
 ## script for calculating number of species (and number of complete time series) in each language and plotting
-# **** check corrected for only pages with complete trends and for average view files ****
 
 library(dplyr)
 library(data.table)
@@ -9,7 +8,7 @@ library(forcats)
 library(patchwork)
 library(here)
 
-# read in the rds for total monthly views - change this to average views
+# read in the rds for total monthly views
 total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
 
 # set up vector for languages, classes, and directory
