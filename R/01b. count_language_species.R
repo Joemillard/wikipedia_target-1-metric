@@ -9,7 +9,7 @@ library(patchwork)
 library(here)
 
 # read in the rds for total monthly views
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+total_monthly_views <- readRDS(here::here("data/total_views/total_monthly_views_10-languages.rds"))
 
 # set up vector for languages, classes, and directory
 languages_short <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
