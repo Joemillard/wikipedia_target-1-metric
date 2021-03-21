@@ -7,7 +7,7 @@ library(patchwork)
 library(lme4)
 
 # read in the total monthly view data
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+total_monthly_views <- readRDS(here::here("data/total_views/total_monthly_views_10-languages.rds"))
 
 ## models for rate of change predicted as function of pollinator and traded
 # first off, merge the FAO fish and traded species with the rates of change
@@ -19,14 +19,11 @@ languages_full <- c("Spanish", "French", "German", "Japanese", "Italian",
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia", "random_data")
 
 # read in pollinator data
-pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE) %>%
+pollinat <- read.csv("data/pollinator_data/COL_compiled_pollinators_add_conf.csv", stringsAsFactors = FALSE) %>%
   select(genus, Class, confidence, fact_conf, comb_conf) %>%
   mutate(Class = tolower(Class)) %>%
   filter(genus != "Tephrozosterops") %>%
   unique()
-
-# read in traded vertebrate species, remove first three empty rows, and then add the fourth row as column names
-traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
 
 # read in the iucn_titles to match genus name and class for the pollinators - filter out tephrozosterops, which has duplicated wiki id among languages and lower pollination confidence
 iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
