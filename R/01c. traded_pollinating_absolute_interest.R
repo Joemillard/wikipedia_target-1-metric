@@ -26,7 +26,7 @@ pollinat <- read.csv("data/pollinator_data/COL_compiled_pollinators_add_conf.csv
   unique()
 
 # read in the iucn_titles to match genus name and class for the pollinators - filter out tephrozosterops, which has duplicated wiki id among languages and lower pollination confidence
-iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
+iucn_titles <- read.csv("data/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
   select(genus_name, class_name, order_name, q_wikidata) %>%
   unique() %>%
   mutate(class_name = tolower(class_name)) %>%
@@ -34,9 +34,9 @@ iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.cs
   filter(genus_name != "Tephrozosterops")
 
 # read in the q_wikidata for traded species
-traded_species_en <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata.csv", stringsAsFactors = FALSE) %>%
+traded_species_en <- read.csv("data/trade_data/q_wikidata_ids/traded_species_wikidata.csv", stringsAsFactors = FALSE) %>%
   select(-ï..)
-traded_species_rem <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata_fr_edit.csv", stringsAsFactors = FALSE) %>%
+traded_species_rem <- read.csv("data/trade_data/q_wikidata_ids/traded_species_wikidata_fr_edit.csv", stringsAsFactors = FALSE) %>%
   select(-manual_search, -X)
 
 # combine the two wildlife traded datasets
@@ -45,20 +45,17 @@ all_traded <- rbind(traded_species_en, traded_species_rem) %>%
   select(qwiki_id, ns) %>%
   unique()
 
-# read in the fish species
-fao_fishes <-  read.csv("data/class_wiki_indices/submission_2/ASFIS_sp/ASFIS_sp_2020.csv", stringsAsFactors = FALSE)
-
 # read in the fish species with q_wikidata
-fishes_en <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata.csv", stringsAsFactors = FALSE)
-fishes_zh <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_zh.csv", stringsAsFactors = FALSE)
-fishes_fr <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_fr.csv", stringsAsFactors = FALSE)
-fishes_de <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_de.csv", stringsAsFactors = FALSE)
-fishes_es <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_es.csv", stringsAsFactors = FALSE)
-fishes_ru <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ru.csv", stringsAsFactors = FALSE)
-fishes_pt <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_pt.csv", stringsAsFactors = FALSE)
-fishes_it <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_it.csv", stringsAsFactors = FALSE)
-fishes_ar <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ar.csv", stringsAsFactors = FALSE)
-fishes_ja <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ja.csv", stringsAsFactors = FALSE)
+fishes_en <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata.csv", stringsAsFactors = FALSE)
+fishes_zh <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_zh.csv", stringsAsFactors = FALSE)
+fishes_fr <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_fr.csv", stringsAsFactors = FALSE)
+fishes_de <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_de.csv", stringsAsFactors = FALSE)
+fishes_es <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_es.csv", stringsAsFactors = FALSE)
+fishes_ru <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ru.csv", stringsAsFactors = FALSE)
+fishes_pt <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_pt.csv", stringsAsFactors = FALSE)
+fishes_it <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_it.csv", stringsAsFactors = FALSE)
+fishes_ar <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ar.csv", stringsAsFactors = FALSE)
+fishes_ja <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ja.csv", stringsAsFactors = FALSE)
 
 # bind together all the fished data
 all_fishes <- rbind(fishes_en, fishes_zh, 
@@ -383,7 +380,3 @@ cbind(poll_prediction_data, preds.emp.summ) %>%
         text = element_text(size = 12))
 
 ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
-
-
-
-
