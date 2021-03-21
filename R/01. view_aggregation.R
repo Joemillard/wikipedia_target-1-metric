@@ -8,7 +8,7 @@ library(parallel)
 # read in additional functions
 source("R/00. functions.R")
 
-# set up vector for languages, classes, and directory
+# set up vector for languages, classes, and directory for views downloaded from Wikipedia API with Python
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 directory <- "Z:/submission_2/user_trends/"
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
@@ -109,7 +109,7 @@ for(i in 1:length(language_views_edit)){
   language_views_monthly[[i]] <- lapply(language_views_edit[[i]], NA_timestamp)
 }
 
-# calculate total monthly views (or daily average views) for each set of views
+# calculate total monthly views (or daily average views) for each set of views - currently run_dat is set as mean()
 average_views_monthly <- list()
 for(i in 1:length(language_views_monthly)){
   average_views_monthly[[i]] <- lapply(language_views_monthly[[i]], run_dat, av_all = FALSE)
@@ -122,7 +122,7 @@ for(i in 1:length(average_views_monthly)){
 }
 
 # save total monthly views as an rds
-saveRDS(language_views_monthly, "J:/submission_2/total_monthly_views_10-languages.rds")
+saveRDS(language_views_monthly, here::here("data/total_views/total_monthly_views_10-languages.rds"))
 
 # save daily average views as an rds
-saveRDS(average_views_monthly, "Z:/submission_2/daily_average_views_10-languages.rds")
+saveRDS(average_views_monthly, here::here("data/average_views/daily_average_views_10-languages.rds"))
