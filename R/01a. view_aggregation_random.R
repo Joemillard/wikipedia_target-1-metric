@@ -1,4 +1,4 @@
-## script for counting the number of views in analysis, and write total monthly views to rds
+## script for counting the number of random views in analysis, and write total monthly views to rds
 library(dplyr)
 library(data.table)
 library(forcats)
@@ -8,7 +8,7 @@ library(parallel)
 # read in additional functions
 source("R/00. functions.R")
 
-# set up vector for languages, classes, and directory
+# set up vector for languages, classes, and directory - random views read in in two chunks
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
 directory <- "Z:/submission_2/user_trends/random_views/"
 random_sets <- c("6000", "5500")
