@@ -1,5 +1,4 @@
 ## script for counting the number of views in analysis, and write total monthly views to rds
-# **** check corrected for only pages with complete trends ****
 library(dplyr)
 library(data.table)
 library(forcats)
@@ -63,7 +62,7 @@ total_views <- function(data_file){
 # run function for total views
 total_views(language_views_edit) # 2227539617 (2.23 billion)
 
-# calculate total views for each language - note this function and plot below exists as plot for final text in count_language_species
+# calculate total views for each language
 group_views <- function(data_file){
   language_total <- c(rep(0, 10))
   for(i in 1:length(language_views)){
