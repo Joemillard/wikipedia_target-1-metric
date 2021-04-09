@@ -17,48 +17,6 @@ directory <- here::here("data/lambdas/species")
 # read in the rds for total monthly views to retrieve the lambda ids
 average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
-# rerun the above overall index with a weighted proportion for users
-# first calculate the weighted proportions and add to dataframe
-# internet users from https://www.internetworldstats.com/stats7.htm
-# and from https://www.statista.com/statistics/828259/predicted-internet-user-penetration-rate-in-italy/ and https://www.istat.it/ for italy
-# italy = 60.24 million * 0.7193 (2020 internet penetration)
-
-# internet users by each langauge, equivalent to 73.5 of total users
-internet_users <- data.frame("Language" = c("\\^en_",
-                                            "\\^zh_",
-                                            "\\^es_",
-                                            "\\^ar_",
-                                            "\\^pt_",
-                                            "\\^fr_",
-                                            "\\^ja_",
-                                            "\\^ru_",
-                                            "\\^de_",
-                                            "\\^it_"),
-                             "Users" = c(1186451052,
-                                         888453068,
-                                         363684593,
-                                         237418349,
-                                         171750818,
-                                         151733611,
-                                         118626672,
-                                         116353942,
-                                         92525427,
-                                         43330632))
-
-# total internet users
-total_users <- 4585578718
-
-# proportion of total users for our 10 languages - include in manuscript
-sum(internet_users$Users)/total_users # 73.5%
-
-# convert the number of users to proportion
-internet_users$users_total_10 <- sum(internet_users$Users)
-internet_users$prop <- internet_users$Users/internet_users$users_total_10
-
-# remove extra columsn with exception of proportion
-internet_users <- internet_users %>%
-  select(Language, prop)
-
 # smooth the adjusted random lambda for each species
 # iterate through all the articles of that class/language
 smooth_series <- function(X){
@@ -159,17 +117,6 @@ view_directories <- function(classes, directory, language){
   return(user_files_dir)
 }
 
-# function for a user weighted average
-wiki_average_weight <- function(data_file){
-  data_fin <- data_file %>%
-    reshape2::melt(id = c("q_wikidata", "SpeciesSSet", "Freq", "V1", "language", "taxa", "article", "prop")) %>%
-    mutate(variable = as.character(variable)) %>%
-    group_by(q_wikidata, variable, taxa) %>%
-    summarise(mean_val = weighted.mean(value, prop)) %>%
-    ungroup()
-  return(data_fin)
-}
-
 # function for binding all the lambdas together and calculate average for each q_wikidata
 wiki_average <- function(data_file){
   data_fin <- data_file %>%
@@ -214,7 +161,7 @@ for(l in 1:length(languages_orig)){
   classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
   # read in the lambda files 
-  random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+  random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
   
   # subset the random trend for the current languages
   random_trend[[l]] <- NULL
@@ -298,8 +245,7 @@ for(l in 1:length(languages_orig)){
 
   # merge all the lambda files, and calc average across each q_wikidata
   merge_species <- rbindlist(merge_species) %>% 
-    inner_join(internet_users, by = c("language" = "Language")) %>%
-    wiki_average_weight()
+    wiki_average()
 
   # reshape lambda files back into year rows, and then split into separate taxonomic classes
   cast_lambda <- reshape2::dcast(merge_species, q_wikidata + taxa ~ variable)
