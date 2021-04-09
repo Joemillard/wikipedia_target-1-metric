@@ -68,25 +68,6 @@ for(i in 1:length(languages)){
   lpi_trends[[i]] <- LPIMain(paste(languages[i], "random_all_infile_conf.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2033, goParallel = TRUE)
 }
 
-# save the rds file for the year values
-saveRDS(lpi_trends, "Z:/submission_2/overall_daily-views_10-random-languages_no-species.rds")
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_no-species.rds")
-
-# adjust each of the lambda values for random
-# adjust the year column
-for(i in 1:length(random_trend)){
-  random_trend[[i]]$date <- as.numeric(rownames(random_trend[[i]]))
-  random_trend[[i]]$Year <- (random_trend[[i]]$date - 1970)/12 + 2015
-  random_trend[[i]]$Year <- as.character(random_trend[[i]]$Year)
-  
-  # calculate lambda for random
-  random_trend[[i]] <- random_trend[[i]] %>%
-    filter(date %in% c(1977:2033))
-  random_trend[[i]]$lamda = c(0, diff(log10(random_trend[[i]]$LPI_final[1:57])))
-  random_trend[[i]]$date <- paste("X", random_trend[[i]]$date, sep = "")
-  random_trend[[i]]$language <- languages[i]
-}
-
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users
 view_directories <- function(classes, languages, directory){
@@ -170,4 +151,4 @@ for(i in 1:length(language_views[[1]])){
 }
   
 # resave the average lambda for random views, according to bootstrap method used throughout
-saveRDS(lpi_trends_adjusted, "Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+saveRDS(lpi_trends_adjusted, "data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
