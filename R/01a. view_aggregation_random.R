@@ -173,7 +173,7 @@ wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en")
 taxa_groups <- c("ACTINOPTERYGII", "AMPHIBIA", "AVES", "INSECTA", "MAMMALIA", "REPTILIA")
 
 # read in the biodiversity pages
-biodiversity_pages <- read.csv(here::here("data/class_wiki_indices/submission_2/all_iucn_titles.csv"), encoding = "UTF-8") %>%
+biodiversity_pages <- read.csv(here::here("data/all_iucn_titles.csv"), encoding = "UTF-8") %>%
   filter(site %in% wiki_proj) %>%
   filter(class_name %in% taxa_groups) %>%
   select(title, site, class_name) %>%
@@ -228,7 +228,7 @@ plot_views <- views_remove_species %>%
   theme(panel.grid = element_blank())
 
 # save plot for species removed from random trend
-ggsave("random_views_removed-species.png", dpi = 350, scale = 1)
+ggsave("outputs/random_views_removed-species.png", dpi = 350, scale = 1)
 
 # plot for number of complete series for the random trends
 ## plot for complete time series
@@ -274,4 +274,4 @@ all_series_frame <- rbindlist(series_frame) %>%
       panel.grid = element_blank(), 
       axis.title.y = element_text(size = 13, vjust = 0.9))
 
-ggsave("random_complete_series.png", scale = 1, dpi = 350)
+ggsave("outputs/random_complete_series.png", scale = 1, dpi = 350)
