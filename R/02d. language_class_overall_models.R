@@ -13,16 +13,16 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the string of languages - original order sorted alphabetically for files read in - CHECK THAT THIS SHOULD BE SORTED
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
 ## format for the lpi function
 # rescale each dataframe to start at 1970 and merge back with the views, then output lpi structure with original id
@@ -249,7 +249,7 @@ final_bound <- rbindlist(final_bound) %>%
   mutate(q_wikidata = factor(q_wikidata))
 
 # read in smoothed rates of change - final_bound from above
-final_bound <- readRDS("data/class_wiki_indices/submission_2/mean_lambda_q_wikidata.rds")
+final_bound <- readRDS("data/lambdas/adjusted_smoothed/mean_lambda_q_wikidata.rds")
 
 ## build model with language as random effect and sample from covariance matrix
 # remove french wikipedia for overall model
@@ -305,7 +305,7 @@ taxa_plot <- cbind(no_french_prediction_data, no_french_preds.emp.summ) %>%
         axis.title.x = element_blank(), 
         axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave("class-rate-of-change_language-random-effect_10000_95_no_french_2.png", scale = 0.8, dpi = 400)
+ggsave("outputs/class-rate-of-change_language-random-effect_10000_95_no_french_2.png", scale = 0.8, dpi = 400)
 
 ## approach for just taxa to check approach of language
 model_2 <- lm(av_lambda ~ taxonomic_class, data = final_bound)
@@ -379,7 +379,7 @@ fin_frame_6 %>%
         axis.ticks.x = element_blank())
 
 # save the plot for interaction of language and class
-ggsave("taxa_language_rate-of-change_3.png", scale = 1, dpi = 350)
+ggsave("outputs/taxa_language_rate-of-change_3.png", scale = 1, dpi = 350)
 
 # checking model assumptions
 par(mfrow = c(2,2))
@@ -430,7 +430,7 @@ taxa_plot <- cbind(prediction_data_inter_random, inter_random_preds.emp.summ) %>
         axis.ticks.x = element_blank())
 
 # save the plot for interaction of language and class
-ggsave("taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale = 1.1, dpi = 350)
+ggsave("outputs/taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale = 1.1, dpi = 350)
 
 ## models for rate of change predicted as function of pollinator and traded
 # first off, merge the FAO fish and traded species with the rates of change
@@ -438,7 +438,7 @@ ggsave("taxa_language_rate-of-change_species-random_covariance-mat_2.png", scale
 wiki_projects <- c("eswiki", "frwiki", "dewiki", "jawiki", "itwiki", "arwiki", "ruwiki", "ptwiki", "zhwiki", "enwiki")
 
 # read in smoothed rates of change - final_bound from above
-rates_of_change <- readRDS("data/class_wiki_indices/submission_2/mean_lambda_q_wikidata.rds")
+rates_of_change <- readRDS("data/lambdas/adjusted_smoothed/mean_lambda_q_wikidata.rds")
 
 # assign new column to rate of change for wikipedia site
 for(i in 1:length(wiki_projects)){
@@ -453,10 +453,10 @@ pollinat <- read.csv("data/COL_compiled_pollinators_add_conf.csv", stringsAsFact
   unique()
 
 # read in traded vertebrate species, remove first three empty rows, and then add the fourth row as column names
-traded_species <- read.csv("data/class_wiki_indices/submission_2/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
+traded_species <- read.csv("data/trade_data/globally_traded_species_Scheffers.csv", stringsAsFactors = FALSE)
 
 # read in the iucn_titles to match genus name and class for the pollinators - filter out tephrozosterops, which has duplicated wiki id among languages and lower pollination confidence
-iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
+iucn_titles <- read.csv("data/all_iucn_titles.csv", stringsAsFactors = FALSE) %>%
   select(genus_name, class_name, order_name, q_wikidata) %>%
   unique() %>%
   mutate(class_name = tolower(class_name)) %>%
@@ -464,9 +464,9 @@ iucn_titles <- read.csv("data/class_wiki_indices/submission_2/all_iucn_titles.cs
   filter(genus_name != "Tephrozosterops")
 
 # read in the q_wikidata for traded species
-traded_species_en <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata.csv", stringsAsFactors = FALSE) %>%
+traded_species_en <- read.csv("data/trade_data/q_wikidata_ids/traded_species_wikidata.csv", stringsAsFactors = FALSE) %>%
   select(-ï..)
-traded_species_rem <- read.csv("data/class_wiki_indices/submission_2/traded_species_wikidata_fr_edit.csv", stringsAsFactors = FALSE) %>%
+traded_species_rem <- read.csv("data/trade_data/q_wikidata_ids/traded_species_wikidata_fr_edit.csv", stringsAsFactors = FALSE) %>%
   select(-manual_search, -X)
 
 #
@@ -475,20 +475,17 @@ all_traded <- rbind(traded_species_en, traded_species_rem) %>%
   select(qwiki_id, ns) %>%
   unique()
   
-# read in the fish species
-fao_fishes <-  read.csv("data/class_wiki_indices/submission_2/ASFIS_sp/ASFIS_sp_2020.csv", stringsAsFactors = FALSE)
-
 # read in the fish species with q_wikidata
-fishes_en <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata.csv", stringsAsFactors = FALSE)
-fishes_zh <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_zh.csv", stringsAsFactors = FALSE)
-fishes_fr <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_fr.csv", stringsAsFactors = FALSE)
-fishes_de <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_de.csv", stringsAsFactors = FALSE)
-fishes_es <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_es.csv", stringsAsFactors = FALSE)
-fishes_ru <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ru.csv", stringsAsFactors = FALSE)
-fishes_pt <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_pt.csv", stringsAsFactors = FALSE)
-fishes_it <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_it.csv", stringsAsFactors = FALSE)
-fishes_ar <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ar.csv", stringsAsFactors = FALSE)
-fishes_ja <- read.csv("data/class_wiki_indices/submission_2/fished_species_wikidata_other_ja.csv", stringsAsFactors = FALSE)
+fishes_en <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata.csv", stringsAsFactors = FALSE)
+fishes_zh <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_zh.csv", stringsAsFactors = FALSE)
+fishes_fr <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_fr.csv", stringsAsFactors = FALSE)
+fishes_de <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_de.csv", stringsAsFactors = FALSE)
+fishes_es <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_es.csv", stringsAsFactors = FALSE)
+fishes_ru <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ru.csv", stringsAsFactors = FALSE)
+fishes_pt <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_pt.csv", stringsAsFactors = FALSE)
+fishes_it <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_it.csv", stringsAsFactors = FALSE)
+fishes_ar <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ar.csv", stringsAsFactors = FALSE)
+fishes_ja <- read.csv("data/trade_data/q_wikidata_ids/fished_species_wikidata_other_ja.csv", stringsAsFactors = FALSE)
 
 # bind together all the fished data
 all_fishes <- rbind(fishes_en, fishes_zh, 
@@ -530,12 +527,6 @@ joined_pollinators <- left_join(traded_rates, pollinat, by = c("genus_name" = "g
 # add column for whether that species is a pollinator, on basis of NAs in confidence column
 joined_pollinators$pollinating[!is.na(joined_pollinators$confidence)] <- "Y"
 joined_pollinators$pollinating[is.na(joined_pollinators$confidence)] <- "N"
-
-# save as RDS for robin
-joined_pollinators_save <- joined_pollinators %>%
-  select(-confidence, -fact_conf, -comb_conf, -ns, -Freq, -SpeciesSSet, -V1)
-
-saveRDS(joined_pollinators_save, "lambda_submission_2.rds")
 
 # remove the extra pollination columns
 joined_pollinators_poll <- joined_pollinators %>%
@@ -632,7 +623,7 @@ taxa_plot_use <- cbind(prediction_data_inter_random, used_random_preds.emp.summ)
   
 taxa_plot + taxa_plot_use + plot_layout(ncol = 1)
 
-ggsave("use_pollinating.png", scale = 1, dpi = 350)
+ggsave("outputs/use_pollinating.png", scale = 1, dpi = 350)
 
 # plot broken down by three way interaction for trade, taxa, language
 joined_pollinators_use <- joined_pollinators %>%
@@ -683,4 +674,4 @@ fin_frame_6 %>%
         axis.text.x = element_text(angle = 45, hjust = 1), 
         axis.title.x = element_blank())
 
-ggsave("trade_language_taxa.png", scale = 1.1, dpi = 350)
+ggsave("outputs/trade_language_taxa.png", scale = 1.1, dpi = 350)
