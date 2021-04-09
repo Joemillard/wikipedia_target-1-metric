@@ -17,9 +17,6 @@ directory <- here::here("data/lambdas/species")
 # read in the rds for total monthly views to retrieve the lambda ids
 average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
-# read in the species unique to each language
-unique_species <- read.csv(here::here("data/one_language_species.csv"))
-
 # rerun the above overall index with a weighted proportion for users
 # first calculate the weighted proportions and add to dataframe
 # internet users from https://www.internetworldstats.com/stats7.htm
@@ -289,8 +286,6 @@ for(l in 1:length(languages_orig)){
         mutate(taxa = classes[i]) %>%
         mutate(language = languages[j])
       print(nrow(all_lambdas[[i]][[j]]) - nrow(merge_lambda[[j]]))
-      merge_lambda[[j]] <- merge_lambda[[j]] %>%
-        filter(!q_wikidata %in% unique_species$q_wikidata)
     }
     merge_fin_lambda[[i]] <- merge_lambda
   }
