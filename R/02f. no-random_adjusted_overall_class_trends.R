@@ -11,10 +11,10 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 average_monthly_views[[2]] <- NULL
 
 ## format for the lpi function
