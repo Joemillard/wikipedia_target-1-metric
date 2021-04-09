@@ -42,5 +42,3 @@ lpi_trends <- list()
 for(i in 1:length(languages)){
   lpi_trends[[i]] <- LPIMain(paste(languages[i], "pages_all_infile_conf.txt", sep = "_"), REF_YEAR = 1977, PLOT_MAX = 2033, goParallel = TRUE)
 }
-
-saveRDS(lpi_trends, "overall_10-languages_6-class-groups_equal-weight.rds")
