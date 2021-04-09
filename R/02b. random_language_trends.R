@@ -22,7 +22,7 @@ wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en")
 taxa_groups <- c("ACTINOPTERYGII", "AMPHIBIA", "AVES", "INSECTA", "MAMMALIA", "REPTILIA")
 
 # read in the biodiversity pages
-biodiversity_pages <- read.csv(here::here("data/class_wiki_indices/submission_2/all_iucn_titles.csv"), encoding = "UTF-8") %>%
+biodiversity_pages <- read.csv(here::here("data/all_iucn_titles.csv"), encoding = "UTF-8") %>%
   filter(site %in% wiki_proj) %>%
   filter(class_name %in% taxa_groups) %>%
   select(title, site, class_name) %>%
@@ -147,7 +147,7 @@ run_each_group <- function(lambda_files, random_trend){
 # run the function with 10 languages, specifying the directory
 user_files <- view_directories(classes = "random",
                                languages = languages,
-                               directory = here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/no_species_random"))
+                               directory = here::here("data/lambdas/no_species_random"))
 
 # read in all the files in groups for each language
 language_views <- list()
