@@ -15,13 +15,13 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the string of languages - original order sorted alphabetically for files read in
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column
@@ -237,4 +237,4 @@ fin_bound_trends %>%
         legend.title = element_text(size = 13),
         legend.text = element_text(size = 11))
 
-ggsave("random_adjusted_class_SAI_free_1000_95_no-random-species_smoothed.png", scale = 1.5, dpi = 350)
+ggsave("outputs/random_adjusted_class_SAI_free_1000_95_no-random-species_smoothed.png", scale = 1.5, dpi = 350)
