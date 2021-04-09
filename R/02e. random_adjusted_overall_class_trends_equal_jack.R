@@ -12,17 +12,17 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
 # read in the species unique to each language
-unique_species <- read.csv(here::here("data/class_wiki_indices/submission_2/one_language_species.csv"))
+unique_species <- read.csv(here::here("data/one_language_species.csv"))
 
 # rerun the above overall index with a weighted proportion for users
 # first calculate the weighted proportions and add to dataframe
-# interent users from https://www.internetworldstats.com/stats7.htm
+# internet users from https://www.internetworldstats.com/stats7.htm
 # and from https://www.statista.com/statistics/828259/predicted-internet-user-penetration-rate-in-italy/ and https://www.istat.it/ for italy
 # italy = 60.24 million * 0.7193 (2020 internet penetration)
 
@@ -351,8 +351,4 @@ bound_trends %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("all-class_SAI_jack-knife_1000_95_random-no-species_smoothed_user-weight_no-unique-spec.png", scale = 1.1, dpi = 350)
-
-
-
-
+ggsave("outputs/all-class_SAI_jack-knife_1000_95_random-no-species_smoothed_user-weight_no-unique-spec.png", scale = 1.1, dpi = 350)
