@@ -13,10 +13,10 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the rds for total monthly views to retrieve the lambda ids - exclude the french wikipedia
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 average_monthly_views[[2]] <- NULL
 
 ## format for the lpi function
@@ -42,7 +42,7 @@ languages <- c("\\^es_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^p
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files - exclude the french wikipedia
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 random_trend[[2]] <- NULL
 
 # adjust each of the lambda values for random
@@ -300,4 +300,4 @@ rbindlist(all_frames) %>%
   theme_bw() +
   theme(panel.grid = element_blank())
 
-ggsave("average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 0.9, dpi = 350)
+ggsave("outputs/average-view_random_adjusted_all-class_no-random-species_smoothed_no-french.png", scale = 0.9, dpi = 350)
