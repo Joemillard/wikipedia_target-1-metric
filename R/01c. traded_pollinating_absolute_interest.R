@@ -213,7 +213,7 @@ box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article vie
     plot_layout(ncol = 5)}
 
 # save plot of traded/non-traded species on Wikipedia
-ggsave("traded_species_wikipedia_boxplot.png", scale = 1.2, dpi = 350)
+ggsave("outputs/traded_species_wikipedia_boxplot.png", scale = 1.2, dpi = 350)
 
 # dataframe of article views for modelling
 trade_dataframe <- list()
@@ -290,7 +290,7 @@ cbind(trade_prediction_data, preds.emp.summ) %>%
           axis.text.x = element_text(angle = 45, hjust = 1), 
           text = element_text(size = 14))
 
-ggsave("trade_predicted_values.png", scale = 1, dpi = 350)
+ggsave("outputs/trade_predicted_values.png", scale = 1, dpi = 350)
 
 ### pollinator dataframe of article views for modelling
 # function for calculating average views for each class for a given language
@@ -379,4 +379,4 @@ cbind(poll_prediction_data, preds.emp.summ) %>%
         axis.text.x = element_text(angle = 45, hjust = 1), 
         text = element_text(size = 12))
 
-ggsave("trade_predicted_values.png", scale = 0.9, dpi = 350)
+ggsave("ouputs/trade_predicted_values.png", scale = 0.9, dpi = 350)
