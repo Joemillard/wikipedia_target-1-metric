@@ -96,7 +96,7 @@ combine_plots <- function(plot_list){
 total_species_plot <- {combine_plots((ind_species_plot[[1]] + ylab("Total species")) + ind_species_plot[2:5] + (ind_species_plot[[6]] + ylab("Total species")) + ind_species_plot[7:10]) + plot_layout(ncol = 5)}
 
 # save the plot for species in each language
-ggsave("all_language_species_plot.png", scale = 1.1, dpi = 350)
+ggsave("outputs/all_language_species_plot.png", scale = 1.1, dpi = 350)
 
 # assign a class column for each subset and collapse all lists to single dataframe
 class_views <- list()
@@ -160,7 +160,7 @@ plot_views <- group_views(total_monthly_views, languages = languages_full) %>%
 # combine the plots for the total species for all class/languages and views for all languages
 plot_views + class_views_plot + plot_layout(ncol = 1)
 
-ggsave("all_language_views-species_2.png", scale = 1.1, dpi = 350)
+ggsave("ouputs/all_language_views-species_2.png", scale = 1.1, dpi = 350)
 
 ## plot for complete time series
 # count number of months of views per article
@@ -240,7 +240,7 @@ for(i in 1:length(all_series_frame)){
 total_species_series <- {combine_plots(full_series_plot) + plot_layout(ncol = 5)}
   
 # save the plot for number of complete series
-ggsave("complete_series_count.png", scale = 1.2, dpi = 350)
+ggsave("outputs/complete_series_count.png", scale = 1.2, dpi = 350)
 
 # plot for the top 5 viewed species for each language
 bound_views <- lapply(total_monthly_views, rbindlist)
@@ -338,7 +338,7 @@ top_species_plot <- top_species_plot[updated_language_order]
 top_viewed_species <- {combine_plots(top_species_plot) + plot_layout(ncol = 5)} 
 
 # save plot for top 5 number of views
-ggsave("top_5_species.png", scale = 1.1, dpi = 350)
+ggsave("outputs/top_5_species.png", scale = 1.1, dpi = 350)
 
 # average views per class plot
 # function for calculating average views for each class for a given language
@@ -436,6 +436,4 @@ box_plot_series <- {combine_plots((class_box_plot[[1]] + ylab("Total article vie
                                     plot_layout(ncol = 5)}
 
 
-ggsave("total_view_distribution.png", scale = 1.1, dpi = 350)
-
-# build plot of median views for pollinating and non-pollinating and traded/non-traded
+ggsave("outputs/total_view_distribution.png", scale = 1.1, dpi = 350)
