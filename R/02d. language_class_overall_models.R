@@ -196,6 +196,12 @@ for(i in 1:length(smoothed_adjusted_lamda)){
   merge_fin_lambda[[i]] <- merge_lambda
 }
 
+names(merge_fin_lambda) <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
+for(i in 1:length(merge_fin_lambda)){
+  names(merge_fin_lambda[[i]]) <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
+}
+
+
 # assign new column for class and filter out the extra lambda rows
 model_format <- function(data_file, taxa, language){
   data_fin <- data_file %>%
