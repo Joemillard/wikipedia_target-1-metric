@@ -10,7 +10,7 @@ source("R/00. functions.R")
 
 # set up vector for languages, classes, and directory - random views read in in two chunks
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
-directory <- "Z:/submission_2/user_trends/random_views/"
+directory <- "D:/wikipedia_views/user_trends/random_views/"
 random_sets <- c("6000", "5500")
 
 # read in the view data for all taxonomic classes
@@ -161,12 +161,12 @@ for(i in 1:length(language_views_monthly)){
 }
 
 # save total monthly views as an rds
-saveRDS(language_views_monthly_bound, "Z:/submission_2/total_monthly_views_random_10-languages.rds")
-saveRDS(language_views_monthly_bound, "Z:/submission_2/average_daily_views_random_10-languages.rds")
+saveRDS(language_views_monthly_bound, "data/total_views/total_monthly_views_random_10-languages.rds")
+saveRDS(language_views_monthly_bound, "data/average_views/average_daily_views_random_10-languages.rds")
 
 # read back in the total monthly views - note need to remove those appearing in the species trends removed
 # removing pages occuring in random trend
-total_random_views <- readRDS("Z:/submission_2/total_views/total_monthly_views_random_10-languages.rds")
+total_random_views <- readRDS("data/total_views/total_monthly_views_random_10-languages.rds")
 
 # set up vectors of wiki project class to remove any animal species from the random data
 wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en"), "wiki", sep = "")
