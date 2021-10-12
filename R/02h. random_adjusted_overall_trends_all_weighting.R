@@ -228,7 +228,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in daily average to retrieve q_wikidata id
-average_monthly_views_weight <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views_weight <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
 iucn_views_poll_weight <- list()
 for(i in 1:length(average_monthly_views_weight)){
@@ -247,7 +247,7 @@ for(i in 1:length(average_monthly_views_weight)){
 }
 
 # read in the lambda files 
-random_trend_weight <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend_weight <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column

@@ -52,7 +52,7 @@ languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^r
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_average-monthly_10-random-languages_from_lambda_no-species.rds")
+random_trend <- readRDS("data/lambdas/no_species_random/overall_average-monthly_10-random-languages_from_lambda_no-species.rds")
 
 # adjust each of the lambda values for random
 # adjust the year column

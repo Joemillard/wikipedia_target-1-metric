@@ -12,7 +12,7 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 
 # extract names of the average view list and assign to a vector
 languages <- names(average_monthly_views)

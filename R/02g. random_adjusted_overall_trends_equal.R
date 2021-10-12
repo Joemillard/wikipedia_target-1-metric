@@ -156,7 +156,7 @@ lpi_trends_adjusted <- list()
 for(l in 1:length(languages_orig)){
   
   # read in the rds for total monthly views to retrieve the lambda ids
-  average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+  average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
   average_monthly_views[[l]] <- NULL # remove ones wikipedia in stepwise manner
   
   ## format for the lpi function
@@ -181,7 +181,7 @@ for(l in 1:length(languages_orig)){
   languages <- languages_orig[-l]
   
   # read in the lambda files 
-  random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+  random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
   random_trend[[l]] <- NULL
   
   # adjust each of the lambda values for random
@@ -307,7 +307,7 @@ languages <- c("\\^es_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^p
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in daily average to retrieve q_wikidata id
-average_monthly_views <- readRDS("Z:/submission_2/daily_average_views_10-languages.rds")
+average_monthly_views <- readRDS("data/average_views/daily_average_views_10-languages.rds")
 average_monthly_views[[2]] <- NULL # remove french wikipedia as overly influences index
 
 iucn_views_poll <- list()
@@ -327,7 +327,7 @@ for(i in 1:length(average_monthly_views)){
 }
 
 # read in the lambda files 
-random_trend <- readRDS("Z:/submission_2/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
+random_trend <- readRDS("data/lambdas/no_species_random/overall_daily-views_10-random-languages_from_lambda_no-species.rds")
 random_trend[[2]] <- NULL
 
 # adjust each of the lambda values for random

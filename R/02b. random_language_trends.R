@@ -15,7 +15,7 @@ source("R/00. functions.R")
 languages <- c("\\^es_", "\\^fr_", "\\^de_", "\\^ja_", "\\^it_", "\\^ar_", "\\^ru_", "\\^pt_", "\\^zh_", "\\^en_")
                
 # read in the rds for total monthly views
-total_monthly_views <- readRDS("Z:/submission_2/average_daily_views_random_10-languages.rds")
+total_monthly_views <- readRDS("data/average_views/average_daily_views_random_10-languages.rds")
 
 # set up vectors of wiki project class to remove any animal species from the random data
 wiki_proj <- paste(c("es", "fr", "de", "ja", "it", "ar", "ru", "pt", "zh", "en"), "wiki", sep = "")
