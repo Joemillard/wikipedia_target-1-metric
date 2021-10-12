@@ -10,7 +10,7 @@ source("R/00. functions.R")
 
 # set up vector for languages, classes, and directory for views downloaded from Wikipedia API with Python
 languages <- c("^es_", "^fr_", "^de_", "^ja_", "^it_", "^ar_", "^ru_", "^pt_", "^zh_", "^en_")
-directory <- "Z:/submission_2/user_trends/"
+directory <- "D:/wikipedia_views/user_trends/"
 classes <- c("actinopterygii", "amphibia", "aves", "insecta", "mammalia", "reptilia")
 
 # read in the view data for all taxonomic classes

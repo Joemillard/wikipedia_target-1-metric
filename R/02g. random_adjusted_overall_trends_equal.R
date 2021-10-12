@@ -13,10 +13,10 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the species unique to each language
-unique_species <- read.csv(here::here("data/class_wiki_indices/submission_2/one_language_species.csv"))
+unique_species <- read.csv(here::here("data/one_language_species.csv"))
 
 # read in the view data for all taxonomic classes
 # loop through each directory and create a list of all files for users

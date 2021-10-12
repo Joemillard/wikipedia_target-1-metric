@@ -13,10 +13,10 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda/annual_lambda")
+directory <- here::here("data/lambdas/species_annual_lambda")
 
 # read in the rds for total monthly views to retrieve the lambda ids
-total_monthly_views <- readRDS(here::here("data/class_wiki_indices/submission_2/user_trends/total_monthly_views_10-languages.rds"))
+total_monthly_views <- readRDS(here::here("data/total_views/total_monthly_views_10-languages.rds"))
 
 # calculate average views per month
 sum_annual <- function(data_file){

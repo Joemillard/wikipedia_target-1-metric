@@ -14,10 +14,10 @@ source("R/00. functions.R")
 
 # script for pollinator models using new language data
 # read in the random rds file
-directory <- here::here("data/class_wiki_indices/submission_2/lambda_files/average_lambda")
+directory <- here::here("data/lambdas/species")
 
 # read in the number of times each species comes up in each language and create proportion column
-unique_species <- read.csv(here::here("data/class_wiki_indices/submission_2/species_number_per_language.csv")) %>%
+unique_species <- read.csv(here::here("data/species_number_per_language.csv")) %>%
   mutate(spec_weight = n/10)
 
 # read in the view data for all taxonomic classes
